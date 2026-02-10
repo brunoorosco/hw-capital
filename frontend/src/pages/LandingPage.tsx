@@ -1,10 +1,29 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { TrendingUp, Shield, Zap, BarChart3, Lock, Globe, ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAccessType } from "@/contexts/AccessTypeContext";
 
 export default function LandingPage() {
   const { isAuthenticated } = useSimpleAuth();
+  const { setAccessType } = useAccessType();
+  const [, setLocation] = useLocation();
+
+  const handleAccessClick = (type: "investimentos" | "bpo") => {
+    setAccessType(type);
+    if (isAuthenticated) {
+      setLocation(type === "investimentos" ? "/dashboard" : "/bpo/dashboard");
+    } else {
+      setLocation("/login");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-ivory deco-pattern">
       {/* Header */}
@@ -27,21 +46,31 @@ export default function LandingPage() {
                 Planos
               </a>
             </Link>
-            <Link href={isAuthenticated ? "/dashboard" : "/login"}>
-              <button className="glow-button px-3 md:px-6 py-2 md:py-2.5 rounded-sm font-semibold tracking-wide text-xs md:text-base">
-                {isAuthenticated ? (
-                  <>
-                    <span className="hidden md:inline">IR PARA DASHBOARD</span>
-                    <span className="md:hidden">DASHBOARD</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="hidden md:inline">ACESSAR ÁREA LOGADA</span>
-                    <span className="md:hidden">LOGIN</span>
-                  </>
-                )}
-              </button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="glow-button px-3 md:px-6 py-2 md:py-2.5 rounded-sm font-semibold tracking-wide text-xs md:text-base">
+                  <span className="hidden md:inline">ACESSAR</span>
+                  <span className="md:hidden">ENTRAR</span>
+                  <ChevronDown className="inline-block ml-1 md:ml-2 w-3 md:w-4 h-3 md:h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-emerald-dark border-gold/30">
+                <DropdownMenuItem 
+                  onClick={() => handleAccessClick("investimentos")}
+                  className="text-cream hover:bg-emerald-light hover:text-gold cursor-pointer py-3 font-medium"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Investimentos
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleAccessClick("bpo")}
+                  className="text-cream hover:bg-emerald-light hover:text-gold cursor-pointer py-3 font-medium"
+                >
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  BPO Financeiro
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
         </div>
       </header>

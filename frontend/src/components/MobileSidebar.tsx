@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Wallet, CreditCard, LogOut, TrendingUp, User, Menu, X } from "lucide-react";
+import { LayoutDashboard, Wallet, CreditCard, LogOut, TrendingUp, User, Menu, X, Users, FileText, DollarSign, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { useAccessType } from "@/contexts/AccessTypeContext";
 
 interface SidebarProps {
   onLogout?: () => void;
 }
 
-const menuItems = [
+const investimentosMenuItems = [
   { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", path: "/dashboard" },
   { icon: <Wallet className="w-5 h-5" />, label: "Carteira", path: "/dashboard/portfolio" },
   { icon: <TrendingUp className="w-5 h-5" />, label: "Investimentos", path: "/dashboard/investments" },
@@ -16,13 +17,25 @@ const menuItems = [
   { icon: <User className="w-5 h-5" />, label: "Perfil", path: "/profile" },
 ];
 
+const bpoMenuItems = [
+  { icon: <LayoutDashboard className="w-5 h-5" />, label: "Dashboard", path: "/bpo/dashboard" },
+  { icon: <Users className="w-5 h-5" />, label: "Clientes", path: "/bpo/clients" },
+  { icon: <BarChart3 className="w-5 h-5" />, label: "Conciliação Bancária", path: "/bpo/reconciliation" },
+  { icon: <DollarSign className="w-5 h-5" />, label: "Fluxo de Caixa", path: "/bpo/cashflow" },
+  { icon: <FileText className="w-5 h-5" />, label: "Relatórios", path: "/bpo/reports" },
+  { icon: <User className="w-5 h-5" />, label: "Perfil", path: "/profile" },
+];
+
 export default function MobileSidebar({ onLogout }: SidebarProps) {
   const [location] = useLocation();
   const { user } = useSimpleAuth();
+  const { accessType } = useAccessType();
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
+
+  const menuItems = accessType === "bpo" ? bpoMenuItems : investimentosMenuItems;
 
   return (
     <>
@@ -85,7 +98,9 @@ export default function MobileSidebar({ onLogout }: SidebarProps) {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <p className="text-cream text-sm">Investment Platform</p>
+                <p className="text-cream text-sm">
+            {accessType === "bpo" ? "BPO Financeiro" : "Investment Platform"}
+          </p>
                 {user && (
                   <div className="mt-4 pt-4 border-t border-gold/20">
                     <p className="text-gold text-sm font-semibold truncate">{user.name}</p>
@@ -150,7 +165,9 @@ export default function MobileSidebar({ onLogout }: SidebarProps) {
               HW CAPITAL
             </div>
           </Link>
-          <p className="text-cream text-sm mt-1">Investment Platform</p>
+          <p className="text-cream text-sm mt-1">
+            {accessType === "bpo" ? "BPO Financeiro" : "Investment Platform"}
+          </p>
           {user && (
             <div className="mt-4 pt-4 border-t border-gold/20">
               <p className="text-gold text-sm font-semibold truncate">{user.name}</p>

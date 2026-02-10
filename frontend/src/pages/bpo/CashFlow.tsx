@@ -1,0 +1,266 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, TrendingUp, ArrowUpCircle, ArrowDownCircle, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import BpoLayout from "@/components/BpoLayout";
+
+const mockClients = [
+  { id: 1, name: "Empresa ABC Ltda" },
+  { id: 2, name: "XYZ Comércio" },
+  { id: 3, name: "Tech Solutions" },
+  { id: 4, name: "Serviços Pro Ltda" },
+];
+
+const mockCashFlowData = {
+  currentBalance: 125340.50,
+  projectedBalance: 148920.00,
+  inflows: 87450.00,
+  outflows: 63870.50,
+  netCashFlow: 23579.50,
+  monthlyData: [
+    { month: "Jan", entradas: 45000, saidas: 32000, saldo: 13000 },
+    { month: "Fev", entradas: 52000, saidas: 38000, saldo: 14000 },
+    { month: "Mar", entradas: 48000, saidas: 35000, saldo: 13000 },
+    { month: "Abr", entradas: 55000, saidas: 40000, saldo: 15000 },
+    { month: "Mai", entradas: 58000, saidas: 42000, saldo: 16000 },
+    { month: "Jun", entradas: 62000, saidas: 45000, saldo: 17000 },
+  ],
+  upcomingTransactions: [
+    { id: 1, type: "entrada", description: "Recebimento Cliente A", amount: 15000, date: "2026-02-15", category: "Vendas" },
+    { id: 2, type: "saida", description: "Pagamento Fornecedor X", amount: 8500, date: "2026-02-18", category: "Fornecedores" },
+    { id: 3, type: "entrada", description: "Recebimento Cliente B", amount: 22000, date: "2026-02-20", category: "Vendas" },
+    { id: 4, type: "saida", description: "Folha de Pagamento", amount: 35000, date: "2026-02-25", category: "Salários" },
+    { id: 5, type: "saida", description: "Aluguel", amount: 4500, date: "2026-02-28", category: "Despesas Fixas" },
+    { id: 6, type: "entrada", description: "Recebimento Cliente C", amount: 18500, date: "2026-02-28", category: "Vendas" },
+  ],
+};
+
+export default function CashFlow() {
+  const [selectedClient, setSelectedClient] = useState("1");
+  const [selectedPeriod, setSelectedPeriod] = useState("30");
+
+  const data = mockCashFlowData;
+
+  return (
+    <BpoLayout>
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Fluxo de Caixa
+            </h1>
+            <p className="text-charcoal-light">Acompanhe o fluxo de caixa dos seus clientes</p>
+          </div>
+          <div className="flex gap-3">
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="w-48 bg-cream border-gold/20">
+                <SelectValue placeholder="Selecione o cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockClients.map(client => (
+                  <SelectItem key={client.id} value={client.id.toString()}>{client.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-32 bg-cream border-gold/20">
+                <Calendar className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 dias</SelectItem>
+                <SelectItem value="30">30 dias</SelectItem>
+                <SelectItem value="90">90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Main Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <Card className="luxury-card bg-ivory border-gold/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gold/10 rounded-sm flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <p className="text-xs text-charcoal-light">Saldo Atual</p>
+                  <p className="text-lg font-bold text-charcoal">
+                    R$ {data.currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="luxury-card bg-emerald/5 border-emerald/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald/10 rounded-sm flex items-center justify-center">
+                  <ArrowUpCircle className="w-5 h-5 text-emerald" />
+                </div>
+                <div>
+                  <p className="text-xs text-charcoal-light">Entradas</p>
+                  <p className="text-lg font-bold text-emerald">
+                    R$ {data.inflows.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="luxury-card bg-red-50 border-red-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-100 rounded-sm flex items-center justify-center">
+                  <ArrowDownCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-charcoal-light">Saídas</p>
+                  <p className="text-lg font-bold text-red-600">
+                    R$ {data.outflows.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="luxury-card bg-blue-50 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-sm flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-charcoal-light">Fluxo Líquido</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    R$ {data.netCashFlow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="luxury-card bg-gold/5 border-gold/30">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gold/10 rounded-sm flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <p className="text-xs text-charcoal-light">Projeção</p>
+                  <p className="text-lg font-bold text-gold">
+                    R$ {data.projectedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <Card className="luxury-card bg-ivory border-gold/20">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Evolução Mensal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {data.monthlyData.map((month, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-charcoal">{month.month}</span>
+                      <span className="text-sm font-bold text-emerald">
+                        R$ {month.saldo.toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 h-8">
+                      <div 
+                        className="bg-emerald/20 rounded-sm flex items-center justify-center text-xs font-semibold text-emerald"
+                        style={{ width: `${(month.entradas / 70000) * 100}%` }}
+                      >
+                        {month.entradas > 50000 && `R$ ${(month.entradas / 1000).toFixed(0)}k`}
+                      </div>
+                      <div 
+                        className="bg-red-200 rounded-sm flex items-center justify-center text-xs font-semibold text-red-800"
+                        style={{ width: `${(month.saidas / 70000) * 100}%` }}
+                      >
+                        {month.saidas > 35000 && `R$ ${(month.saidas / 1000).toFixed(0)}k`}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex gap-4 justify-center pt-4 border-t border-gold/10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-emerald/20 rounded-sm"></div>
+                    <span className="text-xs text-charcoal-light">Entradas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-red-200 rounded-sm"></div>
+                    <span className="text-xs text-charcoal-light">Saídas</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="luxury-card bg-ivory border-gold/20">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Próximas Movimentações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {data.upcomingTransactions.map((transaction) => (
+                  <div key={transaction.id} className="flex items-start gap-3 pb-3 border-b border-gold/10 last:border-0">
+                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center shrink-0 ${
+                      transaction.type === "entrada" ? "bg-emerald/10" : "bg-red-50"
+                    }`}>
+                      {transaction.type === "entrada" ? (
+                        <ArrowUpCircle className="w-4 h-4 text-emerald" />
+                      ) : (
+                        <ArrowDownCircle className="w-4 h-4 text-red-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-charcoal truncate">{transaction.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs border-gold/30">
+                          {transaction.category}
+                        </Badge>
+                        <span className="text-xs text-charcoal-light">
+                          {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-bold shrink-0 ${
+                      transaction.type === "entrada" ? "text-emerald" : "text-red-600"
+                    }`}>
+                      {transaction.type === "entrada" ? "+" : "-"}R$ {transaction.amount.toLocaleString('pt-BR')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-end">
+          <Button variant="outline" className="border-gold/30 hover:bg-gold/10">
+            Exportar Relatório
+          </Button>
+          <Button className="bg-gold hover:bg-gold-light text-emerald-dark font-semibold">
+            Adicionar Movimentação
+          </Button>
+        </div>
+      </div>
+    </BpoLayout>
+  );
+}

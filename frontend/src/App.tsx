@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AccessTypeProvider } from "./contexts/AccessTypeContext";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 import LoginPage from "./pages/LoginPage";
@@ -12,7 +13,7 @@ import { useSimpleAuth } from "./hooks/useSimpleAuth";
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Clients from "./pages/admin/Clients";
-import Plans from "./pages/admin/Plans";
+import AdminPlans from "./pages/admin/Plans";
 import Subscriptions from "./pages/admin/Subscriptions";
 
 // Client pages
@@ -23,6 +24,15 @@ import Payments from "./pages/client/Payments";
 import ProfilePage from "./pages/client/ProfilePage";
 import InvestmentsPage from "./pages/client/InvestmentsPage";
 import PortfolioPage from "./pages/client/PortfolioPage";
+
+// BPO pages
+import BpoDashboard from "./pages/bpo/BpoDashboard";
+import BpoClients from "./pages/bpo/BpoClients";
+import Reconciliation from "./pages/bpo/Reconciliation";
+import CashFlow from "./pages/bpo/CashFlow";
+import Reports from "./pages/bpo/Reports";
+import BpoPlans from "./pages/bpo/Plans";
+import BpoUsers from "./pages/bpo/Users";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType; adminOnly?: boolean }) {
   const { user, isAuthenticated, loading } = useSimpleAuth();
@@ -64,7 +74,7 @@ function Router() {
         {() => <ProtectedRoute component={Clients} adminOnly />}
       </Route>
       <Route path="/admin/plans">
-        {() => <ProtectedRoute component={Plans} adminOnly />}
+        {() => <ProtectedRoute component={AdminPlans} adminOnly />}
       </Route>
       <Route path="/admin/subscriptions">
         {() => <ProtectedRoute component={Subscriptions} adminOnly />}
@@ -93,6 +103,29 @@ function Router() {
         {() => <ProtectedRoute component={PortfolioPage} />}
       </Route>
 
+      {/* BPO routes */}
+      <Route path="/bpo/dashboard">
+        {() => <ProtectedRoute component={BpoDashboard} />}
+      </Route>
+      <Route path="/bpo/clients">
+        {() => <ProtectedRoute component={BpoClients} />}
+      </Route>
+      <Route path="/bpo/reconciliation">
+        {() => <ProtectedRoute component={Reconciliation} />}
+      </Route>
+      <Route path="/bpo/cashflow">
+        {() => <ProtectedRoute component={CashFlow} />}
+      </Route>
+      <Route path="/bpo/reports">
+        {() => <ProtectedRoute component={Reports} />}
+      </Route>
+      <Route path="/bpo/plans">
+        {() => <ProtectedRoute component={BpoPlans} />}
+      </Route>
+      <Route path="/bpo/users">
+        {() => <ProtectedRoute component={BpoUsers} />}
+      </Route>
+
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -102,11 +135,13 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="light" switchable={true}>
+        <AccessTypeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AccessTypeProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
