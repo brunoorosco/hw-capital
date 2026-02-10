@@ -71,7 +71,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
     <div className="min-h-screen bg-ivory">
       {/* Desktop Sidebar */}
       <TooltipProvider delayDuration={0}>
-        <aside className={`hidden lg:flex ${sidebarWidth} h-screen bg-emerald-dark border-r-2 border-gold/30 flex-col fixed left-0 top-0 overflow-y-auto z-50 transition-all duration-300`}>
+        <aside className={`hidden lg:flex ${sidebarWidth} h-screen bg-emerald-dark border-r-2 border-gold/30 flex-col fixed left-0 top-0 overflow-y-auto overflow-x-hidden z-50 transition-all duration-300`}>
         {/* Logo and Toggle */}
         <div className="p-6 border-b-2 border-gold/30 relative">
           <Link href="/bpo/dashboard">
@@ -170,7 +170,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                       <motion.div
                         whileHover={{ x: 4 }}
                         className={`
-                          flex items-center gap-3 px-4 pl-12 py-2 rounded-sm cursor-pointer transition-all duration-300
+                          flex items-center gap-2 px-3 pl-10 py-2 rounded-sm cursor-pointer transition-all duration-300
                           ${isActive 
                             ? 'bg-gold text-emerald-dark font-semibold shadow-lg' 
                             : 'text-cream hover:bg-emerald-light hover:text-gold'
@@ -178,7 +178,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                         `}
                       >
                         <Icon className="w-4 h-4 shrink-0" />
-                        <span className="text-sm font-medium">{item.label}</span>
+                        <span className="text-sm font-medium truncate">{item.label}</span>
                       </motion.div>
                     </Link>
                   );

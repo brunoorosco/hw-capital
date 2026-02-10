@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, CheckCircle2, AlertCircle, Clock, Download } from "lucide-react";
+import { Search, Filter, CheckCircle2, AlertCircle, Clock, Download, Plus, Upload, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,7 +13,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import BpoLayout from "@/components/BpoLayout";
+import { maskCurrency } from "@/lib/validators";
 
 const mockReconciliations = [
   {
@@ -69,6 +82,20 @@ const mockReconciliations = [
 export default function Reconciliation() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
+  const [formData, setFormData] = useState({
+    client: "",
+    bank: "",
+    account: "",
+    period: "",
+    startBalance: "",
+    responsible: "",
+    dueDate: "",
+    observations: "",
+  });
 
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -99,14 +126,64 @@ export default function Reconciliation() {
     atrasado: mockReconciliations.filter(r => r.status === "atrasado").length,
   };
 
+  const resetForm = () => {
+    setFormData({
+      client: "",
+      bank: "",
+      account: "",
+      period: "",
+      startBalance: "",
+      responsible: "",
+      dueDate: "",
+      observations: "",
+    });
+    setUploadedFile(null);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      toast.success(`Arquivo ${file.name} carregado!`);
+    }
+  };
+
+  const handleCreateReconciliation = async () => {
+    if (!formData.client || !formData.bank || !formData.period) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success("Reconciliação criada com sucesso!");
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error("Erro ao criar reconciliação");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <BpoLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Conciliação Bancária
-          </h1>
-          <p className="text-charcoal-light">Gerencie e reconcilie as movimentações bancárias dos clientes</p>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Conciliação Bancária
+            </h1>
+            <p className="text-charcoal-light">Gerencie e reconcilie as movimentações bancárias dos clientes</p>
+          </div>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-gold hover:bg-gold-light text-emerald-dark font-semibold"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Reconciliação
+          </Button>
         </div>
 
         {/* Stats */}
@@ -235,9 +312,11 @@ export default function Reconciliation() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="outline" className="border-gold/30 hover:bg-gold/10">
-                            Abrir
-                          </Button>
+                          <Link href={`/bpo/reconciliation/${rec.id}`}>
+                            <Button size="sm" variant="outline" className="border-gold/30 hover:bg-gold/10">
+                              Abrir
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     );
@@ -255,6 +334,183 @@ export default function Reconciliation() {
             )}
           </CardContent>
         </Card>
+
+        {/* Create Reconciliation Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[700px] bg-ivory border-gold/30 max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Nova Reconciliação Bancária
+              </DialogTitle>
+              <DialogDescription className="text-charcoal-light">
+                Inicie uma nova reconciliação bancária para um cliente
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              {/* Cliente e Banco */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="client" className="text-charcoal font-semibold">Cliente *</Label>
+                  <Select value={formData.client} onValueChange={(value) => setFormData({ ...formData, client: value })}>
+                    <SelectTrigger className="bg-cream border-gold/20">
+                      <SelectValue placeholder="Selecione o cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="empresa-abc">Empresa ABC Ltda</SelectItem>
+                      <SelectItem value="xyz-comercio">XYZ Comércio</SelectItem>
+                      <SelectItem value="tech-solutions">Tech Solutions</SelectItem>
+                      <SelectItem value="servicos-pro">Serviços Pro Ltda</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="bank" className="text-charcoal font-semibold">Banco *</Label>
+                  <Select value={formData.bank} onValueChange={(value) => setFormData({ ...formData, bank: value })}>
+                    <SelectTrigger className="bg-cream border-gold/20">
+                      <SelectValue placeholder="Selecione o banco" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bb">Banco do Brasil</SelectItem>
+                      <SelectItem value="itau">Itaú</SelectItem>
+                      <SelectItem value="santander">Santander</SelectItem>
+                      <SelectItem value="bradesco">Bradesco</SelectItem>
+                      <SelectItem value="caixa">Caixa Econômica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Conta e Período */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="account" className="text-charcoal font-semibold">Conta</Label>
+                  <Input
+                    id="account"
+                    value={formData.account}
+                    onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+                    placeholder="12345-6"
+                    className="bg-cream border-gold/20"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="period" className="text-charcoal font-semibold">Período *</Label>
+                  <Input
+                    id="period"
+                    type="month"
+                    value={formData.period}
+                    onChange={(e) => setFormData({ ...formData, period: e.target.value })}
+                    className="bg-cream border-gold/20"
+                  />
+                </div>
+              </div>
+
+              {/* Saldo Inicial e Responsável */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="startBalance" className="text-charcoal font-semibold">Saldo Inicial</Label>
+                  <Input
+                    id="startBalance"
+                    value={formData.startBalance}
+                    onChange={(e) => setFormData({ ...formData, startBalance: maskCurrency(e.target.value) })}
+                    placeholder="R$ 0,00"
+                    className="bg-cream border-gold/20"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="responsible" className="text-charcoal font-semibold">Responsável</Label>
+                  <Input
+                    id="responsible"
+                    value={formData.responsible}
+                    onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                    placeholder="Nome do responsável"
+                    className="bg-cream border-gold/20"
+                  />
+                </div>
+              </div>
+
+              {/* Prazo */}
+              <div className="grid gap-2">
+                <Label htmlFor="dueDate" className="text-charcoal font-semibold">Prazo para Conclusão</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="bg-cream border-gold/20"
+                />
+              </div>
+
+              {/* Upload de Extrato */}
+              <div className="grid gap-2">
+                <Label className="text-charcoal font-semibold">Extrato Bancário</Label>
+                <div className="border-2 border-dashed border-gold/30 rounded-sm p-6 bg-cream hover:bg-cream/70 transition-colors">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    accept=".pdf,.xlsx,.xls,.csv,.ofx"
+                    onChange={handleFileUpload}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="flex flex-col items-center justify-center cursor-pointer"
+                  >
+                    <Upload className="w-10 h-10 text-gold mb-2" />
+                    <p className="text-sm font-semibold text-charcoal">Clique para fazer upload</p>
+                    <p className="text-xs text-charcoal-light mt-1">PDF, Excel, CSV ou OFX</p>
+                  </label>
+                </div>
+                {uploadedFile && (
+                  <div className="flex items-center justify-between bg-emerald/10 border border-emerald/20 rounded-sm p-3 mt-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald" />
+                      <span className="text-sm font-semibold text-charcoal">{uploadedFile.name}</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setUploadedFile(null)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Observações */}
+              <div className="grid gap-2">
+                <Label htmlFor="observations" className="text-charcoal font-semibold">Observações</Label>
+                <Textarea
+                  id="observations"
+                  value={formData.observations}
+                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                  placeholder="Informações adicionais sobre esta reconciliação..."
+                  className="bg-cream border-gold/20 min-h-[100px]"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCreateReconciliation} 
+                className="bg-gold hover:bg-gold-light text-emerald-dark"
+                disabled={isLoading}
+              >
+                {isLoading ? "Criando..." : "Criar Reconciliação"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </BpoLayout>
   );

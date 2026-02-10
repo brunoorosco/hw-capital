@@ -29,6 +29,7 @@ import PortfolioPage from "./pages/client/PortfolioPage";
 import BpoDashboard from "./pages/bpo/BpoDashboard";
 import BpoClients from "./pages/bpo/BpoClients";
 import Reconciliation from "./pages/bpo/Reconciliation";
+import ReconciliationDetail from "./pages/bpo/ReconciliationDetail";
 import CashFlow from "./pages/bpo/CashFlow";
 import Reports from "./pages/bpo/Reports";
 import BpoPlans from "./pages/bpo/Plans";
@@ -112,6 +113,9 @@ function Router() {
       </Route>
       <Route path="/bpo/reconciliation">
         {() => <ProtectedRoute component={Reconciliation} />}
+      </Route>
+      <Route path="/bpo/reconciliation/:id">
+        {() => <ProtectedRoute component={ReconciliationDetail} />}
       </Route>
       <Route path="/bpo/cashflow">
         {() => <ProtectedRoute component={CashFlow} />}
