@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Lock, Mail, Eye, EyeOff, ArrowRight, Shield } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { authAPI } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
-  const { login, isAuthenticated } = useSimpleAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,22 +14,51 @@ export default function LoginPage() {
     password: ""
   });
 
-  // Se já estiver autenticado, redirecionar para dashboard
+  // Verificar se já está autenticado
   useEffect(() => {
-    if (isAuthenticated) {
+    const token = localStorage.getItem('hw-token');
+    if (token) {
       setLocation("/dashboard");
     }
-  }, [isAuthenticated, setLocation]);
+  }, [setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await login(formData.email);
+      await authAPI.login({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      toast.success("Login realizado com sucesso!");
       setLocation("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login:", error);
+      
+      // Tratamento específico de erros
+      if (error.response) {
+        // Erro da API (status 4xx ou 5xx)
+        const status = error.response.status;
+        const message = error.response.data?.message;
+        
+        if (status === 401) {
+          toast.error(message || "Email ou senha incorretos");
+        } else if (status === 403) {
+          toast.error("Acesso negado. Conta inativa ou sem permissão.");
+        } else if (status === 500) {
+          toast.error("Erro no servidor. Tente novamente em alguns instantes.");
+        } else {
+          toast.error(message || "Erro ao fazer login. Tente novamente.");
+        }
+      } else if (error.request) {
+        // Erro de rede (sem resposta do servidor)
+        toast.error("Erro de conexão. Verifique sua internet ou se o servidor está rodando.");
+      } else {
+        // Outros erros
+        toast.error("Erro inesperado. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +102,13 @@ export default function LoginPage() {
           <p className="text-charcoal-light mb-8">
             Acesse sua carteira de investimentos premium
           </p>
+
+          {/* Demo Credentials Info */}
+          <div className="mb-6 p-4 bg-gold/10 border border-gold/30 rounded-sm">
+            <p className="text-sm font-semibold text-charcoal mb-2">🔑 Credenciais de teste:</p>
+            <p className="text-xs text-charcoal-light">Email: admin@hwcapital.com.br</p>
+            <p className="text-xs text-charcoal-light">Senha: 123456</p>
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">

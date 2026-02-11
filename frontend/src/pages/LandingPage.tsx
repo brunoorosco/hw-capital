@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { TrendingUp, Shield, Zap, BarChart3, Lock, Globe, ArrowRight, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
 import { useAccessType } from "@/contexts/AccessTypeContext";
 
 export default function LandingPage() {
-  const { isAuthenticated } = useSimpleAuth();
+  const { isAuthenticated } = useAuth();
   const { setAccessType } = useAccessType();
   const [, setLocation] = useLocation();
 

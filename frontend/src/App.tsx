@@ -8,7 +8,9 @@ import { AccessTypeProvider } from "./contexts/AccessTypeContext";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 import LoginPage from "./pages/LoginPage";
-import { useSimpleAuth } from "./hooks/useSimpleAuth";
+import { useAuth } from "./hooks/useAuth";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -35,8 +37,14 @@ import Reports from "./pages/bpo/Reports";
 import BpoPlans from "./pages/bpo/Plans";
 import BpoUsers from "./pages/bpo/Users";
 
-function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType; adminOnly?: boolean }) {
-  const { user, isAuthenticated, loading } = useSimpleAuth();
+function ProtectedRoute({
+  component: Component,
+  adminOnly = false,
+}: {
+  component: React.ComponentType;
+  adminOnly?: boolean;
+}) {
+  const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -66,7 +74,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/login" component={LoginPage} />
-      
+
       {/* Admin routes */}
       <Route path="/admin">
         {() => <ProtectedRoute component={AdminDashboard} adminOnly />}
@@ -137,16 +145,28 @@ function Router() {
 }
 
 function App() {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }));
+
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" switchable={true}>
-        <AccessTypeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </AccessTypeProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="light" switchable={true}>
+          <AccessTypeProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </AccessTypeProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

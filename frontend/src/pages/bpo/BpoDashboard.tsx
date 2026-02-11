@@ -24,6 +24,7 @@ const clientsData = [
 ];
 
 export default function BpoDashboard() {
+  console.log('BPO :>> ', );
   return (
     <BpoLayout>
       <div className="max-w-7xl mx-auto">

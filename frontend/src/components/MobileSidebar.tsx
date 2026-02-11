@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, Wallet, CreditCard, LogOut, TrendingUp, User, Menu, X, Users, FileText, DollarSign, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useAccessType } from "@/contexts/AccessTypeContext";
 
 interface SidebarProps {
@@ -28,7 +28,7 @@ const bpoMenuItems = [
 
 export default function MobileSidebar({ onLogout }: SidebarProps) {
   const [location] = useLocation();
-  const { user } = useSimpleAuth();
+  const { user } = useAuth();
   const { accessType } = useAccessType();
   const [isOpen, setIsOpen] = useState(false);
 

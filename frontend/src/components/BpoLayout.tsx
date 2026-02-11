@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { LayoutDashboard, LogOut, Users, FileText, DollarSign, BarChart3, User, Menu, ChevronLeft, ChevronRight, Building2, CreditCard, UserCog, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -46,7 +46,7 @@ interface BpoLayoutProps {
 
 export default function BpoLayout({ children }: BpoLayoutProps) {
   const [location] = useLocation();
-  const { user, logout } = useSimpleAuth();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   

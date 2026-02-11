@@ -29,14 +29,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message: string }>) => {
-    const message = error.response?.data?.message || 'Erro ao processar requisição';
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
     
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isLoginRequest) {
+      // Sessão expirada (mas não é erro de login)
       localStorage.removeItem('hw-token');
       localStorage.removeItem('hw-user');
       window.location.href = '/login';
       toast.error('Sessão expirada. Faça login novamente.');
-    } else {
+    } else if (!isLoginRequest) {
+      // Mostrar toast apenas se NÃO for requisição de login
+      // (deixar o LoginPage.tsx tratar seus próprios erros)
+      const message = error.response?.data?.message || 'Erro ao processar requisição';
       toast.error(message);
     }
     

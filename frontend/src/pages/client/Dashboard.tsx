@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { TrendingUp, TrendingDown, DollarSign, PieChart, Activity } from "lucide-react";
 import { motion } from "framer-motion";
-import { useSimpleAuth } from "@/hooks/useSimpleAuth";
+import { useAuth } from "@/hooks/useAuth";
 
 // Mock data - em produção viria de uma API
 const portfolioData = {
@@ -26,8 +26,9 @@ const portfolioData = {
 };
 
 export default function Dashboard() {
+  console.log(' :>> ', );
   const [, setLocation] = useLocation();
-  const { logout } = useSimpleAuth();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
     logout();

@@ -16,7 +16,12 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error('Error:', error);
+  // Log do erro de forma segura
+  if (error.name === 'ZodError') {
+    console.error('Validation Error:', (error as any).errors);
+  } else {
+    console.error('Error:', error.message, error.name);
+  }
 
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
@@ -35,10 +40,14 @@ export function errorHandler(
 
   // Erro de validação do Zod
   if (error.name === 'ZodError') {
+    const zodError = error as any;
     return res.status(400).json({
       status: 'error',
-      message: 'Erro de validação',
-      errors: error,
+      message: 'Dados inválidos. Verifique os campos e tente novamente.',
+      errors: zodError.errors?.map((e: any) => ({
+        field: e.path.join('.'),
+        message: e.message,
+      })),
     });
   }
 
