@@ -3,6 +3,8 @@ import { authRoutes } from './auth.routes';
 import { clientRoutes } from './client.routes';
 import { reconciliationRoutes } from './reconciliation.routes';
 import { cashflowRoutes } from './cashflow.routes';
+import { planRouter } from './plan.routes';
+import { userRouter } from './user.routes';
 
 const router = Router();
 
@@ -20,8 +22,8 @@ router.use('/auth', authRoutes);
 router.use('/clients', clientRoutes);
 router.use('/reconciliations', reconciliationRoutes);
 router.use('/cashflow', cashflowRoutes);
-// router.use('/plans', planRoutes);
-// router.use('/users', userRoutes);
+router.use('/plans', planRouter);
+router.use('/users', userRouter);
 // router.use('/files', fileRoutes);
 // router.use('/audit', auditRoutes);
 

@@ -13,6 +13,26 @@ export default {
         sm: 'calc(var(--radius) - 4px)'
       },
       colors: {
+        // Art Deco Luxury Colors
+        gold: {
+          DEFAULT: '#D4AF37',
+          light: '#F4E4B3',
+          dark: '#B8941F',
+        },
+        emerald: {
+          DEFAULT: '#1B4D3E',
+          dark: '#0F2922',
+          light: '#2D6B5A',
+        },
+        charcoal: {
+          DEFAULT: '#1C1C1C',
+          light: '#2A2A2A',
+        },
+        ivory: '#FFFEF7',
+        cream: '#F5F2E8',
+        bronze: '#CD7F32',
+        
+        // Shadcn/UI colors
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

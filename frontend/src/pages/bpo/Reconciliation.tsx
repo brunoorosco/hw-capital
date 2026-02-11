@@ -1,185 +1,286 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, CheckCircle2, AlertCircle, Clock, Download, Plus, Upload, X } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, Edit, Trash2, Eye, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import BpoLayout from "@/components/BpoLayout";
-import { maskCurrency } from "@/lib/validators";
+import { api } from "@/lib/api-client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const mockReconciliations = [
-  {
-    id: 1,
-    client: "Empresa ABC Ltda",
-    bank: "Banco do Brasil",
-    period: "Janeiro 2026",
-    startBalance: "R$ 45.320,00",
-    endBalance: "R$ 52.180,00",
-    transactions: 127,
-    pending: 3,
-    status: "pendente",
-    dueDate: "2026-02-15",
-  },
-  {
-    id: 2,
-    client: "XYZ Comércio",
-    bank: "Itaú",
-    period: "Janeiro 2026",
-    startBalance: "R$ 23.450,00",
-    endBalance: "R$ 28.920,00",
-    transactions: 89,
-    pending: 0,
-    status: "concluído",
-    dueDate: "2026-02-10",
-  },
-  {
-    id: 3,
-    client: "Tech Solutions",
-    bank: "Santander",
-    period: "Janeiro 2026",
-    startBalance: "R$ 98.200,00",
-    endBalance: "R$ 105.340,00",
-    transactions: 234,
-    pending: 8,
-    status: "em_andamento",
-    dueDate: "2026-02-18",
-  },
-  {
-    id: 4,
-    client: "Serviços Pro Ltda",
-    bank: "Bradesco",
-    period: "Dezembro 2025",
-    startBalance: "R$ 67.890,00",
-    endBalance: "R$ 71.230,00",
-    transactions: 156,
-    pending: 12,
-    status: "atrasado",
-    dueDate: "2026-01-31",
-  },
-];
+interface Client {
+  id: string;
+  name: string;
+}
+
+interface Reconciliation {
+  id: string;
+  clientId: string;
+  client: Client;
+  bank: string;
+  account: string;
+  period: string;
+  startBalance: number;
+  endBalance: number | null;
+  bankBalance: number | null;
+  systemBalance: number | null;
+  difference: number | null;
+  status: string;
+  responsible: string;
+  startDate: string;
+  dueDate: string | null;
+  completedAt: string | null;
+  observations: string | null;
+}
 
 export default function Reconciliation() {
+  const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [selectedReconciliation, setSelectedReconciliation] = useState<Reconciliation | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
-    client: "",
+    clientId: "",
     bank: "",
     account: "",
     period: "",
     startBalance: "",
+    endBalance: "",
+    bankBalance: "",
+    systemBalance: "",
+    status: "PENDING",
     responsible: "",
+    startDate: "",
     dueDate: "",
     observations: "",
   });
 
-  const getStatusInfo = (status: string) => {
-    switch (status) {
-      case "concluído":
-        return { label: "Concluído", color: "bg-emerald/10 text-emerald border-emerald/20", icon: CheckCircle2 };
-      case "em_andamento":
-        return { label: "Em Andamento", color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock };
-      case "pendente":
-        return { label: "Pendente", color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: AlertCircle };
-      case "atrasado":
-        return { label: "Atrasado", color: "bg-red-100 text-red-800 border-red-200", icon: AlertCircle };
-      default:
-        return { label: status, color: "bg-gray-100 text-gray-800 border-gray-200", icon: Clock };
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [reconciliationsRes, clientsRes] = await Promise.all([
+        api.get<Reconciliation[]>('/reconciliations'),
+        api.get<Client[]>('/clients'),
+      ]);
+
+      setReconciliations(reconciliationsRes.data);
+      setClients(clientsRes.data.filter((c: any) => c.status === 'active'));
+    } catch (error: any) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredReconciliations = mockReconciliations.filter(rec => {
-    const matchesSearch = rec.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rec.bank.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || rec.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const handleCreate = async () => {
+    try {
+      setSubmitting(true);
+      const response = await api.post<Reconciliation>('/reconciliations', {
+        ...formData,
+        startBalance: parseFloat(formData.startBalance),
+        endBalance: formData.endBalance ? parseFloat(formData.endBalance) : null,
+        bankBalance: formData.bankBalance ? parseFloat(formData.bankBalance) : null,
+        systemBalance: formData.systemBalance ? parseFloat(formData.systemBalance) : null,
+      });
 
-  const stats = {
-    total: mockReconciliations.length,
-    concluido: mockReconciliations.filter(r => r.status === "concluído").length,
-    pendente: mockReconciliations.filter(r => r.status === "pendente").length,
-    atrasado: mockReconciliations.filter(r => r.status === "atrasado").length,
+      setReconciliations([...reconciliations, response.data]);
+      setIsCreateDialogOpen(false);
+      resetForm();
+      toast.success('Reconciliação criada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao criar reconciliação:', error);
+      toast.error('Erro ao criar reconciliação');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedReconciliation) return;
+
+    try {
+      setSubmitting(true);
+      const response = await api.put<Reconciliation>(`/reconciliations/${selectedReconciliation.id}`, {
+        ...formData,
+        startBalance: parseFloat(formData.startBalance),
+        endBalance: formData.endBalance ? parseFloat(formData.endBalance) : null,
+        bankBalance: formData.bankBalance ? parseFloat(formData.bankBalance) : null,
+        systemBalance: formData.systemBalance ? parseFloat(formData.systemBalance) : null,
+      });
+
+      setReconciliations(reconciliations.map(r => r.id === selectedReconciliation.id ? response.data : r));
+      setIsEditDialogOpen(false);
+      setSelectedReconciliation(null);
+      resetForm();
+      toast.success('Reconciliação atualizada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao atualizar reconciliação:', error);
+      toast.error('Erro ao atualizar reconciliação');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedReconciliation) return;
+
+    try {
+      await api.delete(`/reconciliations/${selectedReconciliation.id}`);
+      setReconciliations(reconciliations.filter(r => r.id !== selectedReconciliation.id));
+      setIsDeleteDialogOpen(false);
+      setSelectedReconciliation(null);
+      toast.success('Reconciliação deletada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao deletar reconciliação:', error);
+      toast.error('Erro ao deletar reconciliação');
+    }
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setIsCreateDialogOpen(true);
+  };
+
+  const openEditDialog = (reconciliation: Reconciliation) => {
+    setSelectedReconciliation(reconciliation);
+    setFormData({
+      clientId: reconciliation.clientId,
+      bank: reconciliation.bank,
+      account: reconciliation.account,
+      period: reconciliation.period,
+      startBalance: reconciliation.startBalance.toString(),
+      endBalance: reconciliation.endBalance?.toString() || "",
+      bankBalance: reconciliation.bankBalance?.toString() || "",
+      systemBalance: reconciliation.systemBalance?.toString() || "",
+      status: reconciliation.status,
+      responsible: reconciliation.responsible,
+      startDate: reconciliation.startDate.split('T')[0],
+      dueDate: reconciliation.dueDate ? reconciliation.dueDate.split('T')[0] : "",
+      observations: reconciliation.observations || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (reconciliation: Reconciliation) => {
+    setSelectedReconciliation(reconciliation);
+    setIsDeleteDialogOpen(true);
   };
 
   const resetForm = () => {
     setFormData({
-      client: "",
+      clientId: "",
       bank: "",
       account: "",
       period: "",
       startBalance: "",
+      endBalance: "",
+      bankBalance: "",
+      systemBalance: "",
+      status: "PENDING",
       responsible: "",
+      startDate: "",
       dueDate: "",
       observations: "",
     });
-    setUploadedFile(null);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-      toast.success(`Arquivo ${file.name} carregado!`);
+  const filteredReconciliations = reconciliations.filter(recon =>
+    recon.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    recon.bank.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    recon.period.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatCurrency = (value: number | null) => {
+    if (value === null) return '-';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'PENDING': 'text-yellow-600 bg-yellow-100',
+      'IN_PROGRESS': 'text-blue-600 bg-blue-100',
+      'COMPLETED': 'text-green-600 bg-green-100',
+      'CANCELLED': 'text-red-600 bg-red-100',
+    };
+    return colors[status] || 'text-gray-600 bg-gray-100';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'PENDING': 'Pendente',
+      'IN_PROGRESS': 'Em Progresso',
+      'COMPLETED': 'Concluída',
+      'CANCELLED': 'Cancelada',
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'IN_PROGRESS':
+        return <Clock className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
     }
   };
 
-  const handleCreateReconciliation = async () => {
-    if (!formData.client || !formData.bank || !formData.period) {
-      toast.error("Preencha todos os campos obrigatórios");
-      return;
-    }
+  if (loading) {
+    return (
+      <BpoLayout>
+        <div className="max-w-7xl mx-auto">
+          <Skeleton className="h-10 w-64 mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="luxury-card bg-ivory border-gold/20">
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-20" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </BpoLayout>
+    );
+  }
 
-    setIsLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success("Reconciliação criada com sucesso!");
-      setIsCreateDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      toast.error("Erro ao criar reconciliação");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const pendingCount = reconciliations.filter(r => r.status === 'PENDING').length;
+  const inProgressCount = reconciliations.filter(r => r.status === 'IN_PROGRESS').length;
+  const completedCount = reconciliations.filter(r => r.status === 'COMPLETED').length;
 
   return (
     <BpoLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Conciliação Bancária
-            </h1>
-            <p className="text-charcoal-light">Gerencie e reconcilie as movimentações bancárias dos clientes</p>
-          </div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Reconciliações Bancárias
+          </h1>
           <Button 
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-gold hover:bg-gold-light text-emerald-dark font-semibold"
+            onClick={openCreateDialog} 
+            className="bg-gradient-to-r from-gold to-gold-dark text-white hover:from-gold-dark hover:to-gold transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nova Reconciliação
@@ -187,330 +288,238 @@ export default function Reconciliation() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="luxury-card bg-ivory border-gold/20">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-charcoal">{stats.total}</p>
-                <p className="text-sm text-charcoal-light mt-1">Total</p>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-charcoal-light">Pendentes</CardTitle>
+              <AlertCircle className="w-4 h-4 text-yellow-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-charcoal">{pendingCount}</div>
             </CardContent>
           </Card>
-          <Card className="luxury-card bg-emerald/5 border-emerald/20">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-emerald">{stats.concluido}</p>
-                <p className="text-sm text-charcoal-light mt-1">Concluídas</p>
-              </div>
+
+          <Card className="luxury-card bg-ivory border-gold/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-charcoal-light">Em Progresso</CardTitle>
+              <Clock className="w-4 h-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-charcoal">{inProgressCount}</div>
             </CardContent>
           </Card>
-          <Card className="luxury-card bg-yellow-50 border-yellow-200">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-yellow-800">{stats.pendente}</p>
-                <p className="text-sm text-charcoal-light mt-1">Pendentes</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="luxury-card bg-red-50 border-red-200">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-red-800">{stats.atrasado}</p>
-                <p className="text-sm text-charcoal-light mt-1">Atrasadas</p>
-              </div>
+
+          <Card className="luxury-card bg-ivory border-gold/20">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-charcoal-light">Concluídas</CardTitle>
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-charcoal">{completedCount}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <Card className="luxury-card bg-ivory border-gold/20 mb-6">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-charcoal-light w-5 h-5" />
-                <Input
-                  type="text"
-                  placeholder="Buscar por cliente ou banco..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-cream border-gold/20 focus:border-gold"
-                />
-              </div>
-              <div className="w-full md:w-48">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="bg-cream border-gold/20">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Status" />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-charcoal-light w-5 h-5" />
+              <Input
+                placeholder="Buscar por cliente, banco ou período..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Reconciliations List */}
+        <div className="grid grid-cols-1 gap-4">
+          {filteredReconciliations.length === 0 ? (
+            <Card className="luxury-card bg-ivory border-gold/20">
+              <CardContent className="pt-6 text-center text-charcoal-light">
+                Nenhuma reconciliação encontrada
+              </CardContent>
+            </Card>
+          ) : (
+            filteredReconciliations.map((recon) => (
+              <Card key={recon.id} className="luxury-card bg-ivory border-gold/20 hover:border-gold/40 transition-colors">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        {getStatusIcon(recon.status)}
+                        <h3 className="text-xl font-bold text-charcoal">{recon.client.name}</h3>
+                        <span className={`text-xs px-2 py-1 rounded ${getStatusColor(recon.status)}`}>
+                          {getStatusLabel(recon.status)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-charcoal-light">
+                        <p><strong>Banco:</strong> {recon.bank}</p>
+                        <p><strong>Conta:</strong> {recon.account}</p>
+                        <p><strong>Período:</strong> {recon.period}</p>
+                        <p><strong>Responsável:</strong> {recon.responsible}</p>
+                        <p><strong>Saldo Inicial:</strong> {formatCurrency(Number(recon.startBalance))}</p>
+                        <p><strong>Saldo Final:</strong> {formatCurrency(recon.endBalance ? Number(recon.endBalance) : null)}</p>
+                        {recon.difference !== null && recon.difference !== 0 && (
+                          <p className="text-red-600"><strong>Divergência:</strong> {formatCurrency(Number(recon.difference))}</p>
+                        )}
+                        {recon.dueDate && (
+                          <p><strong>Prazo:</strong> {new Date(recon.dueDate).toLocaleDateString('pt-BR')}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Link href={`/bpo/reconciliation/${recon.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Button variant="outline" size="sm" onClick={() => openEditDialog(recon)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => openDeleteDialog(recon)} className="text-red-600 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Create/Edit Dialog */}
+        <Dialog open={isCreateDialogOpen || isEditDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setIsCreateDialogOpen(false);
+            setIsEditDialogOpen(false);
+            resetForm();
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-ivory border-gold/30">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+                {isEditDialogOpen ? 'Editar Reconciliação' : 'Nova Reconciliação Bancária'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label>Cliente</Label>
+                <Select value={formData.clientId} onValueChange={(value) => setFormData({...formData, clientId: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="concluído">Concluído</SelectItem>
-                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="atrasado">Atrasado</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="bg-gold hover:bg-gold-light text-emerald-dark font-semibold">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Reconciliations Table */}
-        <Card className="luxury-card bg-ivory border-gold/20">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Conciliações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gold/20">
-                    <TableHead className="text-charcoal font-semibold">Cliente</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Banco</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Período</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Saldo Inicial</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Saldo Final</TableHead>
-                    <TableHead className="text-charcoal font-semibold text-center">Transações</TableHead>
-                    <TableHead className="text-charcoal font-semibold text-center">Pendentes</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Prazo</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Status</TableHead>
-                    <TableHead className="text-charcoal font-semibold">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReconciliations.map((rec) => {
-                    const statusInfo = getStatusInfo(rec.status);
-                    const StatusIcon = statusInfo.icon;
-                    return (
-                      <TableRow key={rec.id} className="border-gold/10 hover:bg-cream/50">
-                        <TableCell className="font-semibold text-charcoal">{rec.client}</TableCell>
-                        <TableCell className="text-charcoal-light">{rec.bank}</TableCell>
-                        <TableCell className="text-charcoal-light">{rec.period}</TableCell>
-                        <TableCell className="text-charcoal-light">{rec.startBalance}</TableCell>
-                        <TableCell className="text-charcoal-light font-semibold">{rec.endBalance}</TableCell>
-                        <TableCell className="text-center text-charcoal-light">{rec.transactions}</TableCell>
-                        <TableCell className="text-center">
-                          {rec.pending > 0 ? (
-                            <span className="text-red-600 font-semibold">{rec.pending}</span>
-                          ) : (
-                            <span className="text-emerald font-semibold">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-charcoal-light text-sm">
-                          {new Date(rec.dueDate).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${statusInfo.color} border`}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {statusInfo.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/bpo/reconciliation/${rec.id}`}>
-                            <Button size="sm" variant="outline" className="border-gold/30 hover:bg-gold/10">
-                              Abrir
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            {filteredReconciliations.length === 0 && (
-              <div className="text-center py-12">
-                <AlertCircle className="w-16 h-16 text-charcoal-light mx-auto mb-4 opacity-50" />
-                <p className="text-lg text-charcoal-light">Nenhuma conciliação encontrada</p>
-                <p className="text-sm text-charcoal-light mt-2">Tente ajustar seus filtros</p>
+              <div>
+                <Label>Banco</Label>
+                <Input value={formData.bank} onChange={(e) => setFormData({...formData, bank: e.target.value})} />
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Create Reconciliation Dialog */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] bg-ivory border-gold/30 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
-                Nova Reconciliação Bancária
-              </DialogTitle>
-              <DialogDescription className="text-charcoal-light">
-                Inicie uma nova reconciliação bancária para um cliente
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {/* Cliente e Banco */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="client" className="text-charcoal font-semibold">Cliente *</Label>
-                  <Select value={formData.client} onValueChange={(value) => setFormData({ ...formData, client: value })}>
-                    <SelectTrigger className="bg-cream border-gold/20">
-                      <SelectValue placeholder="Selecione o cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="empresa-abc">Empresa ABC Ltda</SelectItem>
-                      <SelectItem value="xyz-comercio">XYZ Comércio</SelectItem>
-                      <SelectItem value="tech-solutions">Tech Solutions</SelectItem>
-                      <SelectItem value="servicos-pro">Serviços Pro Ltda</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="bank" className="text-charcoal font-semibold">Banco *</Label>
-                  <Select value={formData.bank} onValueChange={(value) => setFormData({ ...formData, bank: value })}>
-                    <SelectTrigger className="bg-cream border-gold/20">
-                      <SelectValue placeholder="Selecione o banco" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bb">Banco do Brasil</SelectItem>
-                      <SelectItem value="itau">Itaú</SelectItem>
-                      <SelectItem value="santander">Santander</SelectItem>
-                      <SelectItem value="bradesco">Bradesco</SelectItem>
-                      <SelectItem value="caixa">Caixa Econômica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Conta</Label>
+                <Input value={formData.account} onChange={(e) => setFormData({...formData, account: e.target.value})} />
               </div>
-
-              {/* Conta e Período */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="account" className="text-charcoal font-semibold">Conta</Label>
-                  <Input
-                    id="account"
-                    value={formData.account}
-                    onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-                    placeholder="12345-6"
-                    className="bg-cream border-gold/20"
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="period" className="text-charcoal font-semibold">Período *</Label>
-                  <Input
-                    id="period"
-                    type="month"
-                    value={formData.period}
-                    onChange={(e) => setFormData({ ...formData, period: e.target.value })}
-                    className="bg-cream border-gold/20"
-                  />
-                </div>
+              <div>
+                <Label>Período</Label>
+                <Input placeholder="Ex: Janeiro 2026" value={formData.period} onChange={(e) => setFormData({...formData, period: e.target.value})} />
               </div>
-
-              {/* Saldo Inicial e Responsável */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="startBalance" className="text-charcoal font-semibold">Saldo Inicial</Label>
-                  <Input
-                    id="startBalance"
-                    value={formData.startBalance}
-                    onChange={(e) => setFormData({ ...formData, startBalance: maskCurrency(e.target.value) })}
-                    placeholder="R$ 0,00"
-                    className="bg-cream border-gold/20"
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="responsible" className="text-charcoal font-semibold">Responsável</Label>
-                  <Input
-                    id="responsible"
-                    value={formData.responsible}
-                    onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                    placeholder="Nome do responsável"
-                    className="bg-cream border-gold/20"
-                  />
-                </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pendente</SelectItem>
+                    <SelectItem value="IN_PROGRESS">Em Progresso</SelectItem>
+                    <SelectItem value="COMPLETED">Concluída</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              {/* Prazo */}
-              <div className="grid gap-2">
-                <Label htmlFor="dueDate" className="text-charcoal font-semibold">Prazo para Conclusão</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="bg-cream border-gold/20"
-                />
+              <div>
+                <Label>Responsável</Label>
+                <Input value={formData.responsible} onChange={(e) => setFormData({...formData, responsible: e.target.value})} />
               </div>
-
-              {/* Upload de Extrato */}
-              <div className="grid gap-2">
-                <Label className="text-charcoal font-semibold">Extrato Bancário</Label>
-                <div className="border-2 border-dashed border-gold/30 rounded-sm p-6 bg-cream hover:bg-cream/70 transition-colors">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    accept=".pdf,.xlsx,.xls,.csv,.ofx"
-                    onChange={handleFileUpload}
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="flex flex-col items-center justify-center cursor-pointer"
-                  >
-                    <Upload className="w-10 h-10 text-gold mb-2" />
-                    <p className="text-sm font-semibold text-charcoal">Clique para fazer upload</p>
-                    <p className="text-xs text-charcoal-light mt-1">PDF, Excel, CSV ou OFX</p>
-                  </label>
-                </div>
-                {uploadedFile && (
-                  <div className="flex items-center justify-between bg-emerald/10 border border-emerald/20 rounded-sm p-3 mt-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald" />
-                      <span className="text-sm font-semibold text-charcoal">{uploadedFile.name}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setUploadedFile(null)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
+              <div>
+                <Label>Data Início</Label>
+                <Input type="date" value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} />
               </div>
-
-              {/* Observações */}
-              <div className="grid gap-2">
-                <Label htmlFor="observations" className="text-charcoal font-semibold">Observações</Label>
-                <Textarea
-                  id="observations"
-                  value={formData.observations}
-                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-                  placeholder="Informações adicionais sobre esta reconciliação..."
-                  className="bg-cream border-gold/20 min-h-[100px]"
-                />
+              <div>
+                <Label>Data Prazo</Label>
+                <Input type="date" value={formData.dueDate} onChange={(e) => setFormData({...formData, dueDate: e.target.value})} />
+              </div>
+              <div>
+                <Label>Saldo Inicial</Label>
+                <Input type="number" step="0.01" value={formData.startBalance} onChange={(e) => setFormData({...formData, startBalance: e.target.value})} />
+              </div>
+              <div>
+                <Label>Saldo Final</Label>
+                <Input type="number" step="0.01" value={formData.endBalance} onChange={(e) => setFormData({...formData, endBalance: e.target.value})} />
+              </div>
+              <div>
+                <Label>Saldo Banco</Label>
+                <Input type="number" step="0.01" value={formData.bankBalance} onChange={(e) => setFormData({...formData, bankBalance: e.target.value})} />
+              </div>
+              <div>
+                <Label>Saldo Sistema</Label>
+                <Input type="number" step="0.01" value={formData.systemBalance} onChange={(e) => setFormData({...formData, systemBalance: e.target.value})} />
+              </div>
+              <div className="col-span-2">
+                <Label>Observações</Label>
+                <Textarea value={formData.observations} onChange={(e) => setFormData({...formData, observations: e.target.value})} rows={3} />
               </div>
             </div>
             <DialogFooter>
               <Button 
                 variant="outline" 
-                onClick={() => { setIsCreateDialogOpen(false); resetForm(); }}
-                disabled={isLoading}
+                onClick={() => {
+                  setIsCreateDialogOpen(false);
+                  setIsEditDialogOpen(false);
+                  resetForm();
+                }}
+                className="border-charcoal/20 text-charcoal hover:bg-charcoal/5"
               >
                 Cancelar
               </Button>
               <Button 
-                onClick={handleCreateReconciliation} 
-                className="bg-gold hover:bg-gold-light text-emerald-dark"
-                disabled={isLoading}
+                onClick={isEditDialogOpen ? handleUpdate : handleCreate} 
+                disabled={submitting}
+                className="bg-gradient-to-r from-gold to-gold-dark text-white hover:from-gold-dark hover:to-gold transition-all duration-300"
               >
-                {isLoading ? "Criando..." : "Criar Reconciliação"}
+                {submitting ? 'Salvando...' : 'Salvar'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir esta reconciliação? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </BpoLayout>
   );

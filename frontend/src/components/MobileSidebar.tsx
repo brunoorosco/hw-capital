@@ -23,7 +23,7 @@ const bpoMenuItems = [
   { icon: <BarChart3 className="w-5 h-5" />, label: "Conciliação Bancária", path: "/bpo/reconciliation" },
   { icon: <DollarSign className="w-5 h-5" />, label: "Fluxo de Caixa", path: "/bpo/cashflow" },
   { icon: <FileText className="w-5 h-5" />, label: "Relatórios", path: "/bpo/reports" },
-  { icon: <User className="w-5 h-5" />, label: "Perfil", path: "/profile" },
+  // { icon: <User className="w-5 h-5" />, label: "Perfil", path: "/profile" },
 ];
 
 export default function MobileSidebar({ onLogout }: SidebarProps) {
