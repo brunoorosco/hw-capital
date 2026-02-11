@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  auditLogs AuditLog[]
+  clients   Client[]   @relation("ResponsibleUser")
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+// ============================================
+// CLIENTES BPO
+// ============================================
+
+model Client {
+  id            String   @id @default(uuid())
+  name          String
+  email         String
+  phone         String
+  cnpj          String   @unique
+  address       String?
+  plan          String
+  monthlyValue  Decimal  @db.Decimal(10, 2)
+  status        String   @default("active")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  responsibleId String?
+
+  // Relações
+  responsible      User?              @relation("ResponsibleUser", fields: [responsibleId], references: [id])
+  reconciliations  Reconciliation[]
+  cashFlows        CashFlowMovement[]
+
+  @@map("clients")
+}
+
+// ============================================
+// RECONCILIAÇÃO BANCÁRIA
+// ============================================
+
+model Reconciliation {
+  id            String               @id @default(uuid())
+  clientId      String
+  bank          String
+  account       String?
+  period        String
+  startBalance  Decimal              @db.Decimal(15, 2)
+  endBalance    Decimal?             @db.Decimal(15, 2)
+  bankBalance   Decimal?             @db.Decimal(15, 2)
+  systemBalance Decimal?             @db.Decimal(15, 2)
+  difference    Decimal?             @db.Decimal(15, 2)
+  status        ReconciliationStatus @default(PENDING)
+  responsible   String?
+  startDate     DateTime             @default(now())
+  dueDate       DateTime?
+  completedAt   DateTime?
+  observations  String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  // Relações
+  client       Client                     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  transactions ReconciliationTransaction[]
+  divergences  Divergence[]
+
+  @@map("reconciliations")
+}
+
+enum ReconciliationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+model ReconciliationTransaction {
+  id               String            @id @default(uuid())
+  reconciliationId String
+  date             DateTime
+  description      String
+  type             TransactionType
+  amount           Decimal           @db.Decimal(15, 2)
+  category         String?
+  document         String?
+  status           TransactionStatus @default(PENDING)
+  observation      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relações
+  reconciliation Reconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  @@map("reconciliation_transactions")
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Divergence {
+  id               String   @id @default(uuid())
+  reconciliationId String
+  date             DateTime
+  description      String
+  expectedValue    Decimal  @db.Decimal(15, 2)
+  actualValue      Decimal  @db.Decimal(15, 2)
+  difference       Decimal  @db.Decimal(15, 2)
+  status           String   @default("investigating")
+  observation      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relações
+  reconciliation Reconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+
+  @@map("divergences")
+}
+
+// ============================================
+// FLUXO DE CAIXA
+// ============================================
+
+model CashFlowMovement {
+  id          String       @id @default(uuid())
+  clientId    String
+  type        MovementType
+  description String
+  amount      Decimal      @db.Decimal(15, 2)
+  date        DateTime
+  category    String?
+  document    String?
+  observation String?
+  status      String       @default("confirmed")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relações
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("cash_flow_movements")
+}
+
+enum MovementType {
+  ENTRADA
+  SAIDA
+}
+
+// ============================================
+// PLANOS
+// ============================================
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String
+  price       Decimal  @db.Decimal(10, 2)
+  description String?
+  features    String[] // Array de features
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("plans")
+}
+
+// ============================================
+// AUDITORIA (LOG DE TODAS AS OPERAÇÕES)
+// ============================================
+
+model AuditLog {
+  id         String       @id @default(uuid())
+  userId     String?
+  action     AuditAction
+  entity     String // Nome da entidade (Client, Reconciliation, etc)
+  entityId   String // ID do registro afetado
+  method     HttpMethod
+  endpoint   String
+  payload    Json? // Dados enviados
+  oldData    Json? // Dados antes da modificação (PUT/DELETE)
+  newData    Json? // Dados após modificação (POST/PUT)
+  ipAddress  String?
+  userAgent  String?
+  statusCode Int?
+  error      String?
+  createdAt  DateTime     @default(now())
+
+  // Relações
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  READ
+}
+
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+// ============================================
+// ARQUIVOS (CLOUDFLARE R2)
+// ============================================
+
+model File {
+  id          String   @id @default(uuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  bucket      String
+  key         String // Chave no bucket
+  entityType  String? // Tipo de entidade relacionada (Client, Reconciliation, etc)
+  entityId    String? // ID da entidade relacionada
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("files")
+}
