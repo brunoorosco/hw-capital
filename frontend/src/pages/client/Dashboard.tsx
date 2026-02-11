@@ -26,7 +26,6 @@ const portfolioData = {
 };
 
 export default function Dashboard() {
-  console.log(' :>> ', );
   const [, setLocation] = useLocation();
   const { logout } = useAuth();
 

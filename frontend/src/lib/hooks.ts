@@ -15,9 +15,9 @@ export function useApiQuery<TData = unknown>(
       try {
         return await api.get<TData>(endpoint, params);
       } catch (error) {
-        if (isUnauthorizedError(error)) {
-          window.location.href = getLoginUrl();
-        }
+        // Não redirecionar aqui, deixar o interceptor do axios fazer isso
+        // ou o componente tratar o erro
+        console.log('[useApiQuery] Erro na query:', endpoint, error);
         throw error;
       }
     },

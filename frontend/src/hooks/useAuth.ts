@@ -1,86 +1,60 @@
-import { useApiQuery, useApiMutation } from "@/lib/hooks";
-import { ApiError } from "@/lib/api";
-import { useCallback, useEffect, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { getLoginUrl } from "@/lib/const";
+import { useState, useCallback } from "react";
 import type { User } from "@/types";
 
-type UseAuthOptions = {
-  redirectOnUnauthenticated?: boolean;
-  redirectPath?: string;
-};
-
-export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
-    options ?? {};
-  const queryClient = useQueryClient();
-
-  const meQuery = useApiQuery<User | null>(["auth", "me"], "/auth/me", undefined, {
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  const logoutMutation = useApiMutation("/auth/logout", "POST", {
-    onSuccess: () => {
-      queryClient.setQueryData(["auth", "me"], null);
-    },
-  });
-
-  const logout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync({});
-    } catch (error: unknown) {
-      if (
-        error instanceof ApiError &&
-        error.status === 401
-      ) {
-        return;
+export function useAuth() {
+  // Lazy initialization - carrega do localStorage apenas 1x na inicialização
+  const [user, setUser] = useState<User | null>(() => {
+    console.log('[useAuth SIMPLIFIED] Inicializando estado do usuário');
+    const token = localStorage.getItem('hw-token');
+    const userDataStr = localStorage.getItem('hw-user');
+    
+    if (token && userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+        console.log('[useAuth SIMPLIFIED] Usuário carregado:', userData);
+        return userData;
+      } catch (error) {
+        console.error('[useAuth SIMPLIFIED] Erro ao parsear dados:', error);
+        return null;
       }
-      throw error;
-    } finally {
-      queryClient.setQueryData(["auth", "me"], null);
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     }
-  }, [logoutMutation, queryClient]);
+    
+    console.log('[useAuth SIMPLIFIED] Sem autenticação');
+    return null;
+  });
+  
+  const [loading] = useState(false); // Sempre false, pois carrega sincronamente
 
-  const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
-    return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
-    };
-  }, [
-    meQuery.data,
-    meQuery.error,
-    meQuery.isLoading,
-    logoutMutation.error,
-    logoutMutation.isPending,
-  ]);
+  const logout = useCallback(() => {
+    console.log('[useAuth SIMPLIFIED] Logout');
+    localStorage.removeItem('hw-token');
+    localStorage.removeItem('hw-user');
+    localStorage.removeItem('hw-access-type');
+    localStorage.removeItem('manus-runtime-user-info');
+    setUser(null);
+    
+    // Forçar redirecionamento para landing page
+    window.location.href = '/';
+  }, []);
 
-  useEffect(() => {
-    if (!redirectOnUnauthenticated) return;
-    if (meQuery.isLoading || logoutMutation.isPending) return;
-    if (state.user) return;
-    if (typeof window === "undefined") return;
-    if (window.location.pathname === redirectPath) return;
-
-    window.location.href = redirectPath
-  }, [
-    redirectOnUnauthenticated,
-    redirectPath,
-    logoutMutation.isPending,
-    meQuery.isLoading,
-    state.user,
-  ]);
+  const refresh = useCallback(() => {
+    console.log('[useAuth SIMPLIFIED] Refresh');
+    const userDataStr = localStorage.getItem('hw-user');
+    if (userDataStr) {
+      try {
+        setUser(JSON.parse(userDataStr));
+      } catch (error) {
+        console.error('[useAuth SIMPLIFIED] Erro no refresh:', error);
+      }
+    }
+  }, []);
 
   return {
-    ...state,
-    refresh: () => meQuery.refetch(),
+    user,
+    loading,
+    error: null,
+    isAuthenticated: !!user,
     logout,
+    refresh,
   };
 }

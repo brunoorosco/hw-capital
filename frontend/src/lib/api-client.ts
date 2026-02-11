@@ -30,16 +30,22 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message: string }>) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const isMeRequest = error.config?.url?.includes('/auth/me');
     
-    if (error.response?.status === 401 && !isLoginRequest) {
-      // Sessão expirada (mas não é erro de login)
+    if (error.response?.status === 401 && !isLoginRequest && !isMeRequest) {
+      // Sessão expirada (mas não é erro de login ou verificação de usuário)
+      console.log('[api-client] 401 detectado, limpando autenticação');
       localStorage.removeItem('hw-token');
       localStorage.removeItem('hw-user');
-      window.location.href = '/login';
-      toast.error('Sessão expirada. Faça login novamente.');
-    } else if (!isLoginRequest) {
-      // Mostrar toast apenas se NÃO for requisição de login
-      // (deixar o LoginPage.tsx tratar seus próprios erros)
+      localStorage.removeItem('manus-runtime-user-info');
+      
+      // Só redireciona se não estiver já na página de login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+        toast.error('Sessão expirada. Faça login novamente.');
+      }
+    } else if (!isLoginRequest && !isMeRequest) {
+      // Mostrar toast apenas se NÃO for requisição de login ou verificação
       const message = error.response?.data?.message || 'Erro ao processar requisição';
       toast.error(message);
     }

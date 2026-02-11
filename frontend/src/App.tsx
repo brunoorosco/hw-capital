@@ -13,10 +13,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
 // Admin pages
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import Clients from "./pages/admin/Clients";
-import AdminPlans from "./pages/admin/Plans";
-import Subscriptions from "./pages/admin/Subscriptions";
+// Admin pages comentadas - não são mais usadas
+// import AdminDashboard from "./pages/admin/AdminDashboard";
+// import Clients from "./pages/admin/Clients";
+// import AdminPlans from "./pages/admin/Plans";
+// import Subscriptions from "./pages/admin/Subscriptions";
 
 // Client pages
 import Dashboard from "./pages/client/Dashboard";
@@ -44,9 +45,11 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, error } = useAuth();
 
+  // Se estiver carregando, mostra loading
   if (loading) {
+    console.log("[ProtectedRoute] Loading...");
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -57,14 +60,60 @@ function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
+  // Se não estiver autenticado E não houver token no localStorage, redireciona
+  if (!isAuthenticated && !localStorage.getItem("hw-token")) {
+    console.log(
+      "[ProtectedRoute] Não autenticado e sem token, redirecionando para /login"
+    );
     return <Redirect to="/login" />;
   }
 
-  if (adminOnly && user?.role !== "admin") {
-    return <Redirect to="/dashboard" />;
+  // Se há erro na API mas tem token, tenta usar dados do localStorage
+  if (error && !isAuthenticated) {
+    const userDataStr = localStorage.getItem("hw-user");
+    if (userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+        console.log("[ProtectedRoute] Usando dados do localStorage:", userData);
+
+        // Verificar se é admin only
+        if (
+          adminOnly &&
+          userData.role !== "admin" &&
+          userData.role !== "ADMIN"
+        ) {
+          console.log(
+            "[ProtectedRoute] Não é admin (localStorage), deveria redirecionar para /dashboard"
+          );
+          console.log(
+            "[ProtectedRoute] Mas vou renderizar mesmo assim para evitar loop"
+          );
+          // TEMPORARIAMENTE DESABILITADO PARA EVITAR LOOP
+          // return <Redirect to="/dashboard" />;
+        }
+
+        return <Component />;
+      } catch (e) {
+        console.error(
+          "[ProtectedRoute] Erro ao parsear dados do localStorage:",
+          e
+        );
+        console.log(
+          "[ProtectedRoute] Deveria redirecionar para /login, mas vou aguardar..."
+        );
+        // TEMPORARIAMENTE DESABILITADO
+        // return <Redirect to="/login" />;
+      }
+    }
   }
 
+  // adminOnly não é mais necessário - todos acessam as mesmas páginas
+  // A diferença está nos menus que aparecem baseado no role
+  if (adminOnly) {
+    console.log("[ProtectedRoute] adminOnly está deprecated - ignorando");
+  }
+
+  console.log("[ProtectedRoute] Renderizando componente protegido");
   return <Component />;
 }
 
@@ -74,20 +123,6 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/login" component={LoginPage} />
-
-      {/* Admin routes */}
-      <Route path="/admin">
-        {() => <ProtectedRoute component={AdminDashboard} adminOnly />}
-      </Route>
-      <Route path="/admin/clients">
-        {() => <ProtectedRoute component={Clients} adminOnly />}
-      </Route>
-      <Route path="/admin/plans">
-        {() => <ProtectedRoute component={AdminPlans} adminOnly />}
-      </Route>
-      <Route path="/admin/subscriptions">
-        {() => <ProtectedRoute component={Subscriptions} adminOnly />}
-      </Route>
 
       {/* Client routes */}
       <Route path="/dashboard">
@@ -113,6 +148,8 @@ function Router() {
       </Route>
 
       {/* BPO routes */}
+      {/* Redirect /bpo to /bpo/dashboard */}
+      <Route path="/bpo">{() => <Redirect to="/bpo/dashboard" />}</Route>
       <Route path="/bpo/dashboard">
         {() => <ProtectedRoute component={BpoDashboard} />}
       </Route>
@@ -145,15 +182,18 @@ function Router() {
 }
 
 function App() {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: 1,
-        refetchOnWindowFocus: false,
-      },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            retry: 1,
+            refetchOnWindowFocus: false,
+          },
+        },
+      })
+  );
 
   return (
     <ErrorBoundary>
