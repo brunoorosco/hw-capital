@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DollarSign, TrendingUp, ArrowUpCircle, ArrowDownCircle, Calendar, Plus, Filter, Eye, Edit, Trash2, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
