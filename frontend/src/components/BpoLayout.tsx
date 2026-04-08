@@ -102,7 +102,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                 }`}
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                {sidebarCollapsed ? "HW" : "HW CAPITAL"}
+                {sidebarCollapsed ? "HW" : "Orostec Capital"}
               </div>
             </Link>
             {!sidebarCollapsed && (
@@ -357,7 +357,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
               className="text-2xl font-bold text-gold-light cursor-pointer"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              HW CAPITAL
+              Orostec Capital
             </div>
           </Link>
 
@@ -382,7 +382,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                     className="text-3xl font-bold text-gold-light"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
-                    HW CAPITAL
+                    Orostec Capital
                   </SheetTitle>
                   <p className="text-cream text-sm">BPO Financeiro</p>
                   {user && (

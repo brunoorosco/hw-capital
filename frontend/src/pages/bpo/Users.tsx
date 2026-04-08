@@ -47,7 +47,7 @@ interface User {
 const mockUsers: User[] = [
   {
     id: 1,
-    name: "Admin HW Capital",
+    name: "Admin Orostec Capital",
     email: "admin@hwcapital.com.br",
     phone: "(11) 98765-4321",
     role: "admin",

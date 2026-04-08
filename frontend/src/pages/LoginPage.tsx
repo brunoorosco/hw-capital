@@ -142,7 +142,7 @@ export default function LoginPage() {
               className="text-4xl font-bold text-charcoal mb-2 cursor-pointer inline-block"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              HW CAPITAL
+              Orostec Capital
             </div>
           </Link>
           <div className="geometric-divider w-24 mb-8"></div>

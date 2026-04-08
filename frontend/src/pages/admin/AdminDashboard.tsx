@@ -49,7 +49,7 @@ export default function AdminDashboard() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Painel Administrativo</h1>
-          <p className="text-muted-foreground mt-2">Visão geral da plataforma HW Capital</p>
+          <p className="text-muted-foreground mt-2">Visão geral da plataforma Orostec Capital</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

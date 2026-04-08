@@ -118,7 +118,7 @@ export default function Home() {
                 <span className="text-white font-bold text-xl">HW</span>
               </div>
               <span className="text-xl font-semibold text-foreground">
-                HW Capital
+                Orostec Capital
               </span>
             </div>
             <nav className="flex items-center gap-6">
@@ -141,7 +141,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-              BPO Financeiro <span className="text-primary">HW Capital</span>
+              BPO Financeiro <span className="text-primary">Orostec Capital</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
               Cuidamos da gestão financeira do seu negócio para que você tenha
@@ -283,7 +283,7 @@ export default function Home() {
                   <div>
                     <p className="font-semibold text-foreground">WhatsApp</p>
                     <a
-                      href="https://wa.me/5511981142921"
+                      href="https://wa.me/5511940714391"
                       className="text-primary hover:underline"
                     >
                       (11) 98114-2921
@@ -315,7 +315,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">
-              © {new Date().getFullYear()} HW Capital. Todos os direitos
+              © {new Date().getFullYear()} Orostec Capital. Todos os direitos
               reservados.
             </p>
             <p className="text-xs mt-2">

@@ -83,7 +83,7 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Custom colors for HW Capital
+        // Custom colors for Orostec Capital
         'emerald': {
           DEFAULT: '#2D5F4C',
           light: '#3A7A5F',

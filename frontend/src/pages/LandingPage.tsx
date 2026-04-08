@@ -35,7 +35,7 @@ export default function LandingPage() {
             className="text-xl md:text-3xl font-bold text-gold-light"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            HW CAPITAL
+            Orostec Capital
           </motion.div>
           <nav className="flex gap-3 md:gap-8 items-center">
             <a href="#features" className="hidden md:block text-cream hover:text-gold transition-colors duration-300 font-medium">
@@ -181,7 +181,7 @@ export default function LandingPage() {
               className="text-3xl md:text-5xl lg:text-6xl font-bold text-charcoal mb-4"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              Por Que Escolher a <span className="text-gold">HW Capital</span>
+              Por Que Escolher a <span className="text-gold">Orostec Capital</span>
             </h2>
             <div className="geometric-divider w-32 mx-auto mt-8"></div>
           </div>
@@ -259,7 +259,7 @@ export default function LandingPage() {
             Pronto para Transformar sua Gestão Financeira?
           </h2>
           <p className="text-xl text-cream mb-10 max-w-2xl mx-auto">
-            Junte-se a centenas de empresas que confiam na HW Capital para ter controle total das finanças.
+            Junte-se a centenas de empresas que confiam na Orostec Capital para ter controle total das finanças.
           </p>
           <Link href={isAuthenticated ? "/dashboard" : "/login"}>
             <button className="glow-button pulse-cta px-12 py-5 rounded-sm text-xl font-bold tracking-wider">
@@ -278,7 +278,7 @@ export default function LandingPage() {
                 className="text-3xl font-bold text-gold-light mb-2"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                HW CAPITAL
+                Orostec Capital
               </div>
               <div className="text-cream text-sm space-y-1">
                 <p>📞 WhatsApp: (11) 98114-2921</p>
@@ -286,7 +286,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="text-cream text-sm">
-              © 2026 HW Capital. BPO Financeiro Premium.
+              © 2026 Orostec Capital. BPO Financeiro Premium.
             </div>
           </div>
         </div>

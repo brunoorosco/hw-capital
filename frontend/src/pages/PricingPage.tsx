@@ -67,7 +67,7 @@ export default function PricingPage() {
               className="text-xl md:text-3xl font-bold text-gold-light cursor-pointer"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              HW CAPITAL
+              Orostec Capital
             </div>
           </Link>
           <nav className="flex gap-3 md:gap-8 items-center">
@@ -274,7 +274,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex-shrink-0">
                   <a
-                    href="https://wa.me/5511981142921?text=Olá! Gostaria de saber mais sobre o Plano Personalizado da HW Capital."
+                    href="https://wa.me/5511940714391?text=Olá! Gostaria de saber mais sobre o Plano Personalizado da Orostec Capital."
                     target="_blank"
                     rel="noopener noreferrer"
                     className="glow-button px-8 py-4 rounded-sm font-bold tracking-wider inline-block"
@@ -295,7 +295,7 @@ export default function PricingPage() {
             className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-charcoal"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            Por Que Escolher a HW Capital?
+            Por Que Escolher a Orostec Capital?
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
@@ -408,7 +408,7 @@ export default function PricingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
             <a
-              href="https://wa.me/5511981142921?text=Olá! Gostaria de conhecer os planos da HW Capital."
+              href="https://wa.me/5511940714391?text=Olá! Gostaria de conhecer os planos da Orostec Capital."
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto glow-button pulse-cta px-6 md:px-12 py-4 md:py-5 rounded-sm text-base md:text-xl font-bold tracking-wider inline-block text-center"
@@ -433,7 +433,7 @@ export default function PricingPage() {
                 className="text-3xl font-bold text-gold-light mb-2"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                HW CAPITAL
+                Orostec Capital
               </div>
               <div className="text-cream text-sm space-y-1">
                 <p>📞 WhatsApp: (11) 98114-2921</p>
@@ -441,7 +441,7 @@ export default function PricingPage() {
               </div>
             </div>
             <div className="text-cream text-sm">
-              © 2026 HW Capital. BPO Financeiro Premium.
+              © 2026 Orostec Capital. BPO Financeiro Premium.
             </div>
           </div>
         </div>

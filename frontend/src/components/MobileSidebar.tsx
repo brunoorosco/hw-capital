@@ -47,7 +47,7 @@ export default function MobileSidebar({ onLogout }: SidebarProps) {
               className="text-2xl font-bold text-gold-light cursor-pointer"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              HW CAPITAL
+              Orostec Capital
             </div>
           </Link>
           
@@ -89,7 +89,7 @@ export default function MobileSidebar({ onLogout }: SidebarProps) {
                     className="text-3xl font-bold text-gold-light"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
-                    HW CAPITAL
+                    Orostec Capital
                   </div>
                   <button
                     onClick={closeMenu}
@@ -162,7 +162,7 @@ export default function MobileSidebar({ onLogout }: SidebarProps) {
               className="text-3xl font-bold text-gold-light cursor-pointer"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              HW CAPITAL
+              Orostec Capital
             </div>
           </Link>
           <p className="text-cream text-sm mt-1">
