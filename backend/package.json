@@ -1,17 +1,16 @@
 {
   "name": "hw-capital-backend",
   "version": "1.0.0",
-  "description": "Backend HW Capital - BPO Financeiro",
+  "description": "Backend Orostec Capital - BPO Financeiro",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsup src",
-    "start": "node dist/server.js",
+    "start": "node -r ./dist/utils/register-alias.js dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "test": "vitest"
+    "prisma:seed": "tsx prisma/seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -52,7 +51,15 @@
     "prisma": "^5.22.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.2"
+  },
+   "prettier": {
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true,
+    "printWidth": 120
+  },
+  "engines": {
+    "node": ">=22.x"
   }
 }

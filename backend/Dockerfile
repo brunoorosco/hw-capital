@@ -17,11 +17,11 @@ RUN apk add --no-cache libc6-compat
 RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
-# COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json .
 COPY --from=builder /app/package-lock.json .
 RUN npm ci --omit=dev
-# RUN npm run prisma:generate
+RUN npm run prisma:generate
 
 FROM node:22-alpine3.18 AS runner
 # RUN sed -i 's/https/http/' /etc/apk/repositories
@@ -40,4 +40,5 @@ RUN mkdir -p /app/temp \
 USER expressjs
 COPY --from=installer /app .
 
-CMD ["npm", "run", "start"]
+# Run Prisma migrations and start the server
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
