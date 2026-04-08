@@ -40,4 +40,4 @@ RUN mkdir -p /app/temp \
 USER expressjs
 COPY --from=installer /app .
 
-CMD ["npm", "run", "docker-start"]
+CMD ["npm", "run", "start"]
