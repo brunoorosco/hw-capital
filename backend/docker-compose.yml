@@ -1,5 +1,5 @@
 services:
-  bpo-api:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
