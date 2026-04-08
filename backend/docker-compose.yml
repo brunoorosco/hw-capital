@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bpo-api  
+    env_file:
+      - .env
+    networks:
+      - app_network
+      - traefik_public  
+    labels:
+            - traefik.enable=true
+            - traefik.http.routers.bpo-api.rule=Host(`bpo-api.orostec.com.br`)
+            - traefik.http.routers.bpo-api.entrypoints=websecure
+            - traefik.http.routers.bpo-api.tls.certresolver=leresolver
+            - traefik.http.routers.bpo-api.service=bpo-api
+            - traefik.http.services.bpo-api.loadbalancer.server.port=3333
+            # WebSocket suporte (se necessário)
+            - 'traefik.http.middlewares.websocket.headers.customrequestheaders.Upgrade=websocket'
+            - 'traefik.http.middlewares.websocket.headers.customrequestheaders.Connection=Upgrade'
+            #- 'traefik.http.routers.backend.middlewares=websocket'  
+networks:
+  app_network:
+      external: true
+  traefik_public:
+      external: true          
