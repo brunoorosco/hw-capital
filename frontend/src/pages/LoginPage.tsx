@@ -63,14 +63,11 @@ export default function LoginPage() {
         email: formData.email,
         password: formData.password
       });
-      
-      console.log('[LoginPage] Login bem-sucedido:', response);
-      
+            
       toast.success("Login realizado com sucesso!");
 
       // Obter tipo de acesso selecionado pelo usuário
       const accessType = getSavedAccessType();
-      console.log("accessType :>> ", accessType);
       
       // Redirecionar para a página correta baseado no role do usuário
       const redirectPath = getRedirectPath(response.user.role, accessType || undefined);
@@ -121,18 +118,16 @@ export default function LoginPage() {
         credential: credentialResponse.credential,
       });
 
-      console.log('[LoginPage] Login com Google bem-sucedido:', response);
+      if (!response.user || !response.token) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
       toast.success("Login com Google realizado com sucesso!");
 
-      // Obter tipo de acesso selecionado pelo usuário
-      const accessType = getSavedAccessType();
-      
-      // Redirecionar para a página correta baseado no role do usuário
-      const redirectPath = getRedirectPath(response.user.role, accessType || undefined);
-      setLocation(redirectPath);
+          setLocation('/bpo/dashboard');
     } catch (error: any) {
       console.error("Erro no login com Google:", error);
-      const message = error.response?.data?.message || "Erro ao fazer login com Google";
+      const message = error.response?.data?.message || error.message || "Erro ao fazer login com Google";
       toast.error(message);
     }
   };

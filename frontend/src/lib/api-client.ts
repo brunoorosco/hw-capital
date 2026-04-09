@@ -30,9 +30,11 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<{ message: string }>) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const isGoogleLoginRequest = error.config?.url?.includes('/auth/google');
     const isMeRequest = error.config?.url?.includes('/auth/me');
+    const isAuthRequest = isLoginRequest || isGoogleLoginRequest || isMeRequest;
     
-    if (error.response?.status === 401 && !isLoginRequest && !isMeRequest) {
+    if (error.response?.status === 401 && !isAuthRequest) {
       // Sessão expirada (mas não é erro de login ou verificação de usuário)
       console.log('[api-client] 401 detectado, limpando autenticação');
       localStorage.removeItem('hw-token');
@@ -44,8 +46,8 @@ api.interceptors.response.use(
         window.location.href = '/login';
         toast.error('Sessão expirada. Faça login novamente.');
       }
-    } else if (!isLoginRequest && !isMeRequest) {
-      // Mostrar toast apenas se NÃO for requisição de login ou verificação
+    } else if (!isAuthRequest) {
+      // Mostrar toast apenas se NÃO for requisição de autenticação
       const message = error.response?.data?.message || 'Erro ao processar requisição';
       toast.error(message);
     }

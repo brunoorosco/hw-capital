@@ -7,7 +7,13 @@ import type { AccessType } from "@/contexts/AccessTypeContext";
  * NOTA: Tanto ADMIN quanto USER vão para as mesmas páginas (BPO ou Dashboard).
  * A diferença está nos menus/permissões que aparecem para cada role.
  */
-export function getRedirectPath(userRole: string, accessType?: AccessType): string {
+export function getRedirectPath(userRole: string | undefined, accessType?: AccessType): string {
+  // Validar se role foi fornecido
+  if (!userRole) {
+    console.warn('[redirect-helper] userRole é undefined, usando fallback para /dashboard');
+    return '/dashboard';
+  }
+
   // Normalizar role (backend retorna ADMIN/USER, frontend espera admin/client/bpo)
   const role = userRole.toLowerCase();
 
