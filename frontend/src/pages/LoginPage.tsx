@@ -143,7 +143,7 @@ function LoginForm() {
           <p className="text-charcoal-light mb-8">
             Acesse sua carteira de investimentos premium
           </p>
-
+{/* 
           <div className="mb-6 p-4 bg-gold/10 border border-gold/30 rounded-sm">
             <p className="text-sm font-semibold text-charcoal mb-2">
               🔑 Credenciais de teste:
@@ -152,7 +152,7 @@ function LoginForm() {
               Email: admin@hwcapital.com.br
             </p>
             <p className="text-xs text-charcoal-light">Senha: 123456</p>
-          </div>
+          </div> */}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
