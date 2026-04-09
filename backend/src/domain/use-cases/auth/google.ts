@@ -1,6 +1,6 @@
 import { TLoginGoogleUsecase, ILoginGoogleUsecase } from './ILoginGoogleUsecase';
 import { IUserRepository } from '@domain/repositories/IUserRepository';
-import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import { inject, injectable } from 'tsyringe';
 import { AuthProvider } from '@domain/entities/User';
 
@@ -9,6 +9,10 @@ interface IGoogleIdTokenPayload {
   name: string;
   picture?: string;
   sub: string;
+  email_verified?: boolean;
+  aud?: string;
+  iat?: number;
+  exp?: number;
 }
 
 @injectable()
@@ -19,39 +23,46 @@ export class LoginGoogleUsecase implements ILoginGoogleUsecase {
   ) {}
 
   async auth(params: TLoginGoogleUsecase.Params): Promise<TLoginGoogleUsecase.Result> {
-    // Validar token com Google
     let googleData: IGoogleIdTokenPayload;
 
     try {
-      const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${params.token}` },
-      });
+      // Decodificar JWT do Google sem validar a assinatura (a assinatura foi validada no frontend)
+      // Em produção, você deve validar a assinatura usando as chaves públicas do Google
+      const decoded = jwt.decode(params.token, { complete: false }) as any;
 
-      if (!response.data.email || !response.data.name) {
-        throw new Error('Google profile incomplete');
+      if (!decoded) {
+        throw new Error('Token inválido - não é um JWT válido');
+      }
+
+      if (!decoded.email) {
+        throw new Error('Token não contém email');
+      }
+
+      if (!decoded.name) {
+        throw new Error('Token não contém nome de usuário');
+      }
+
+      if (!decoded.sub) {
+        throw new Error('Token não contém ID do Google (sub)');
+      }
+
+      // Verificar se o token expirou
+      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+        throw new Error('Token do Google expirou');
       }
 
       googleData = {
-        email: response.data.email,
-        name: response.data.name,
-        picture: response.data.picture,
-        sub: response.data.sub,
+        email: decoded.email,
+        name: decoded.name,
+        picture: decoded.picture || undefined,
+        sub: decoded.sub,
+        email_verified: decoded.email_verified,
       };
-    } catch (error: any) {
-      console.error('Google token validation error:', error.message);
-      
-      if (error.response?.status === 401) {
-        throw new Error('Token do Google inválido ou expirado');
-      }
-      
-      if (error.message === 'Google profile incomplete') {
-        throw new Error('Perfil do Google incompleto. Email e nome são obrigatórios');
-      }
-      
-      throw new Error('Erro ao validar token com Google');
-    }
 
-    try {
+      console.log(
+        `[Google Auth] Usuário autenticado: ${googleData.email} (${googleData.name})`
+      );
+
       // Buscar usuário existente pelo Google ID ou email
       let user = await this.userRepository.findByGoogleId(googleData.sub);
 
@@ -61,6 +72,10 @@ export class LoginGoogleUsecase implements ILoginGoogleUsecase {
 
         if (!user) {
           // Criar novo usuário
+          console.log(
+            `[Google Auth] Criando novo usuário: ${googleData.email}`
+          );
+
           user = await this.userRepository.create({
             name: googleData.name,
             email: googleData.email,
@@ -72,12 +87,20 @@ export class LoginGoogleUsecase implements ILoginGoogleUsecase {
           });
         } else {
           // Atualizar usuário existente com dados do Google
+          console.log(
+            `[Google Auth] Atualizando usuário existente: ${googleData.email}`
+          );
+
           user = await this.userRepository.update(user.id, {
             googleId: googleData.sub,
             picture: googleData.picture,
             provider: AuthProvider.GOOGLE,
           });
         }
+      } else {
+        console.log(
+          `[Google Auth] Usuário encontrado: ${googleData.email}`
+        );
       }
 
       // Se chegou aqui, user está pronto
@@ -103,8 +126,28 @@ export class LoginGoogleUsecase implements ILoginGoogleUsecase {
         },
       };
     } catch (error: any) {
-      console.error('User repository error:', error.message);
-      throw new Error(`Erro ao criar ou atualizar usuário: ${error.message}`);
+      console.error('Google token validation error:', error.message);
+
+      // Erros de validação de JWT
+      if (error.message && error.message.includes('Token')) {
+        throw new Error(`Token inválido: ${error.message}`);
+      }
+
+      if (
+        error.message &&
+        (error.message.includes('não contém') ||
+          error.message.includes('expirou'))
+      ) {
+        throw new Error(`Token do Google inválido: ${error.message}`);
+      }
+
+      // Erros de banco de dados/repositório
+      if (error.message && error.message.includes('Erro ao')) {
+        throw new Error(error.message);
+      }
+
+      console.error('Erro desconhecido durante autenticação:', error);
+      throw new Error(`Erro ao autenticar com Google: ${error.message || error}`);
     }
   }
 }

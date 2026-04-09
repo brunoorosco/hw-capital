@@ -129,13 +129,17 @@ export class AuthController {
 
   async google(req: Request, res: Response) {
     try {
-      const { token } = z
-        .object({ token: z.string().min(1, 'Token é obrigatório') })
+      const { credential } = z
+        .object({ credential: z.string().min(1, 'Credential é obrigatório') })
         .parse(req.body)
 
-      if (!token) {
+      if (!credential) {
         throw new AppError('Token do Google é obrigatório', 400)
       }
+
+      console.log(
+        `[Auth Controller] Recebido credential com ${credential.length} caracteres`
+      )
 
       let loginGoogleUsecase: LoginGoogleUsecase
       try {
@@ -148,7 +152,11 @@ export class AuthController {
         )
       }
 
-      const result = await loginGoogleUsecase.auth({ token })
+      const result = await loginGoogleUsecase.auth({ token: credential })
+
+      console.log(
+        `[Auth Controller] Autenticação bem-sucedida para ${result.user.email}`
+      )
 
       const jwtToken = jwt.sign(
         {
@@ -179,6 +187,7 @@ export class AuthController {
       }
 
       if (error instanceof Error) {
+        console.error(`[Auth Controller] Erro durante auth: ${error.message}`)
         throw new AppError(error.message || 'Falha na autenticação com Google', 401)
       }
 
