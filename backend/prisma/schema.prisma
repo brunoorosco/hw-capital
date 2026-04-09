@@ -15,7 +15,10 @@ model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
-  password  String
+  password  String?
+  googleId  String?  @unique
+  picture   String?
+  provider  String   @default("local")
   role      UserRole @default(USER)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())

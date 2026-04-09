@@ -1,0 +1,249 @@
+<!-- START: GOOGLE_AUTH_EXAMPLES.http -->
+### Google Auth Integration Testing
+
+## 1. Test Google Authentication Endpoint
+
+### Create a new user via Google
+POST http://localhost:3333/auth/google
+Content-Type: application/json
+
+{
+  "token": "YOUR_GOOGLE_ACCESS_TOKEN_HERE"
+}
+
+### Notes for Testing:
+# 1. Get a Google Access Token:
+#    - Visit: https://developers.google.com/oauthplayground
+#    - Select Google OAuth 2.0 APIs > Gmail API v1 or any API
+#    - Click "Authorize APIs"
+#    - Copy the access_token from the response
+#
+# 2. Replace YOUR_GOOGLE_ACCESS_TOKEN_HERE with the actual token
+#
+# 3. Expected Response:
+#    {
+#      "user": {
+#        "id": "uuid-string",
+#        "name": "User Name",
+#        "email": "user@example.com",
+#        "picture": "https://lh3.googleusercontent.com/..."
+#      },
+#      "token": "jwt.token.here"
+#    }
+
+---
+
+## 2. Test Authenticated Endpoint with JWT
+
+### Get current user info
+GET http://localhost:3333/auth/me
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+### Notes:
+# - Use the "token" value from the Google auth response
+# - Expected Response: User object with all fields
+
+---
+
+## 3. Test Traditional Login (existing users)
+
+### Login with email/password
+POST http://localhost:3333/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+---
+
+## 4. Test Registration (fallback)
+
+### Register a new user
+POST http://localhost:3333/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "SecurePassword123"
+}
+
+---
+
+## Response Examples
+
+### ✅ Successful Google Auth
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Bruno Orosco",
+    "email": "bruno@example.com",
+    "picture": "https://lh3.googleusercontent.com/a-/GoogleUserImage"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+### ❌ Invalid Token
+HTTP/1.1 401 Unauthorized
+Content-Type: application/json
+
+{
+  "error": "Invalid Google token"
+}
+
+### ❌ Missing Email in Token
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error": "Email not found in Google token"
+}
+
+---
+
+## Full Flow Example (JavaScript)
+
+```javascript
+// Step 1: Trigger Google Sign-In
+async function handleGoogleSignIn() {
+  try {
+    // Get Google Access Token (your OAuth implementation)
+    const googleToken = await getGoogleAccessToken();
+    
+    // Step 2: Send token to backend
+    const response = await fetch('http://localhost:3333/auth/google', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: googleToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Google authentication failed');
+    }
+
+    const data = await response.json();
+    
+    // Step 3: Store JWT token
+    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    // Step 4: Redirect to dashboard
+    window.location.href = '/dashboard';
+    
+  } catch (error) {
+    console.error('Authentication error:', error);
+    alert('Failed to authenticate with Google');
+  }
+}
+
+// Step 5: Use token for subsequent requests
+async function fetchUserData() {
+  const token = localStorage.getItem('authToken');
+  
+  const response = await fetch('http://localhost:3333/auth/me', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  const user = await response.json();
+  return user;
+}
+```
+
+## Database Verification
+
+After successful authentication, verify the user was created:
+
+```sql
+-- Check if user was created in database
+SELECT id, name, email, provider, "googleId", picture, active, "createdAt" 
+FROM users 
+WHERE email = 'your-email@example.com';
+
+-- Verify unique constraint on googleId
+SELECT "googleId", COUNT(*) as count 
+FROM users 
+WHERE "googleId" IS NOT NULL 
+GROUP BY "googleId" 
+HAVING COUNT(*) > 1;
+```
+
+## Environment Variables Required
+
+```env
+# In your .env file
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-key-here-min-32-chars
+JWT_EXPIRES_IN=7d
+
+# Database (should already be configured)
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# Node Environment
+NODE_ENV=development
+```
+
+## Debugging Tips
+
+### Enable SQL Logging (dev only)
+Set in your Prisma PrismaClient.ts:
+```typescript
+const prisma = new PrismaClient({
+  log: ['query', 'error', 'warn'],
+});
+```
+
+### Check Token Payload
+Decode your JWT at: https://jwt.io/
+
+Copy the JWT token from the response and decode it to see the payload.
+
+### Monitor Network Requests
+Use browser DevTools Network tab to see:
+- Request to backend: POST /auth/google
+- Response with token and user data
+- Subsequent requests with Authorization header
+
+## Common Issues & Solutions
+
+1. **Error: "Email not found in Google token"**
+   - Google API might have changed response format
+   - Try on https://developers.google.com/oauthplayground first
+   - Check Google API console for proper OAuth scopes
+
+2. **Error: "Email já cadastrado"**
+   - User already exists in system with different email
+   - Can't have two accounts with same email
+   - User should use original email for login
+
+3. **Error: "prisma Studio tidak terbuka"**
+   - Run: `npx prisma studio` to inspect database
+   - Verify user was created with correct fields
+
+4. **Token Expired**
+   - Get a new token via Google OAuth
+   - JWT has expiration set in JWT_EXPIRES_IN
+
+## Testing with Insomnia/Postman
+
+### Setup Environment Variables:
+- `base_url`: http://localhost:3333
+- `google_token`: YOUR_GOOGLE_ACCESS_TOKEN
+- `jwt_token`: (leave blank, will be filled after Google auth)
+
+### Request Order:
+1. First request to POST /auth/google with token
+2. Copy the token from response
+3. Set jwt_token variable
+4. Request GET /auth/me with jwt_token in Authorization header

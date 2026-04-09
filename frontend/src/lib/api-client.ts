@@ -80,9 +80,20 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface GoogleLoginDTO {
+  credential: string;
+}
+
 export const authAPI = {
   login: async (data: LoginDTO): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/login', data);
+    localStorage.setItem('hw-token', response.data.token);
+    localStorage.setItem('hw-user', JSON.stringify(response.data.user));
+    return response.data;
+  },
+
+  googleLogin: async (data: GoogleLoginDTO): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/google', data);
     localStorage.setItem('hw-token', response.data.token);
     localStorage.setItem('hw-user', JSON.stringify(response.data.user));
     return response.data;
