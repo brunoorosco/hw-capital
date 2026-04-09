@@ -12,7 +12,7 @@ export function GoogleLoginButton() {
       try {
         // Send the Google access token to our backend
         const response = await api.post<{ success: boolean }>("/auth/google", {
-          accessToken: tokenResponse.access_token,
+          credential: tokenResponse.access_token,
         });
 
         if (response.success) {

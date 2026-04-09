@@ -3,6 +3,7 @@ import { IUserRepository } from '@domain/repositories/IUserRepository';
 import jwt from 'jsonwebtoken';
 import { inject, injectable } from 'tsyringe';
 import { AuthProvider } from '@domain/entities/User';
+import { IdempotencyParameterMismatch } from '@aws-sdk/client-s3';
 
 interface IGoogleIdTokenPayload {
   email: string;
@@ -23,33 +24,25 @@ export class LoginGoogleUsecase implements ILoginGoogleUsecase {
   ) {}
 
   async auth(params: TLoginGoogleUsecase.Params): Promise<TLoginGoogleUsecase.Result> {
-    let googleData: IGoogleIdTokenPayload;
+     let googleData: IGoogleIdTokenPayload;
 
-    try {
-      // Decodificar JWT do Google sem validar a assinatura (a assinatura foi validada no frontend)
-      // Em produção, você deve validar a assinatura usando as chaves públicas do Google
-      const decoded = jwt.decode(params.token, { complete: false }) as any;
+     console.log('params :>> ', params);
+  try {
+    // ✅ Trocar jwt.decode por chamada à API do Google
+    const googleResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${params.token}` }
+    });
 
-      if (!decoded) {
-        throw new Error('Token inválido - não é um JWT válido');
-      }
+    if (!googleResponse.ok) {
+      throw new Error(`Token inválido: ${googleResponse.status}`);
+    }
 
-      if (!decoded.email) {
-        throw new Error('Token não contém email');
-      }
+    const decoded = await googleResponse.json();
+if (!decoded) throw new Error('Token do Google inválido ou malformado');
 
-      if (!decoded.name) {
-        throw new Error('Token não contém nome de usuário');
-      }
-
-      if (!decoded.sub) {
-        throw new Error('Token não contém ID do Google (sub)');
-      }
-
-      // Verificar se o token expirou
-      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-        throw new Error('Token do Google expirou');
-      }
+    if (!decoded?.email) throw new Error('Token não contém email');
+    if (!decoded?.name) throw new Error('Token não contém nome de usuário');
+    if (!decoded?.sub) throw new Error('Token não contém ID do Google (sub)');
 
       googleData = {
         email: decoded.email,
