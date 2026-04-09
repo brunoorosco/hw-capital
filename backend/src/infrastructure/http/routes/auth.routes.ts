@@ -7,6 +7,8 @@ const authController = new AuthController();
 
 authRoutes.post('/login', (req, res) => authController.login(req, res));
 authRoutes.post('/register', (req, res) => authController.register(req, res));
+authRoutes.post('/google', (req, res) => authController.google(req, res));
 authRoutes.get('/me', authMiddleware, (req, res) => authController.me(req, res));
+
 
 export { authRoutes };

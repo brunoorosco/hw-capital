@@ -40,6 +40,7 @@ export function errorHandler(
 
   // Erro de validação do Zod
   if (error.name === 'ZodError') {
+    console.error('Zod Validation Error:', (error as any).errors);
     const zodError = error as any;
     return res.status(400).json({
       status: 'error',

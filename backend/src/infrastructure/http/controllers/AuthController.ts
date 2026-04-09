@@ -1,44 +1,46 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '../../../infrastructure/database/prisma/PrismaClient';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { z } from 'zod';
-import { AppError } from '../middlewares/errorHandler';
+import { Request, Response } from 'express'
+import { PrismaClient } from '../../../infrastructure/database/prisma/PrismaClient'
+import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
+import { z } from 'zod'
+import { AppError } from '../middlewares/errorHandler'
+import { container } from 'tsyringe'
+import { LoginGoogleUsecase } from '@domain/use-cases/auth/google'
 
-const prisma = PrismaClient.getInstance();
+const prisma = PrismaClient.getInstance()
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-});
+})
 
 const registerSchema = z.object({
   name: z.string().min(3),
   email: z.string().email(),
   password: z.string().min(6),
   role: z.enum(['ADMIN', 'USER']).optional(),
-});
+})
 
 export class AuthController {
   async login(req: Request, res: Response) {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password } = loginSchema.parse(req.body)
 
     const user = await prisma.user.findUnique({
       where: { email },
-    });
+    })
 
     if (!user) {
-      throw new AppError('Credenciais inválidas', 401);
+      throw new AppError('Credenciais inválidas', 401)
     }
 
     if (!user.active) {
-      throw new AppError('Usuário inativo', 401);
+      throw new AppError('Usuário inativo', 401)
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(password, user.password)
 
     if (!passwordMatch) {
-      throw new AppError('Credenciais inválidas', 401);
+      throw new AppError('Credenciais inválidas', 401)
     }
 
     const token = jwt.sign(
@@ -50,8 +52,8 @@ export class AuthController {
       process.env.JWT_SECRET!,
       {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-      }
-    );
+      },
+    )
 
     return res.json({
       user: {
@@ -61,21 +63,21 @@ export class AuthController {
         role: user.role,
       },
       token,
-    });
+    })
   }
 
   async register(req: Request, res: Response) {
-    const data = registerSchema.parse(req.body);
+    const data = registerSchema.parse(req.body)
 
     const userExists = await prisma.user.findUnique({
       where: { email: data.email },
-    });
+    })
 
     if (userExists) {
-      throw new AppError('Email já cadastrado', 400);
+      throw new AppError('Email já cadastrado', 400)
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = await bcrypt.hash(data.password, 10)
 
     const user = await prisma.user.create({
       data: {
@@ -84,7 +86,7 @@ export class AuthController {
         password: passwordHash,
         role: data.role || 'USER',
       },
-    });
+    })
 
     const token = jwt.sign(
       {
@@ -95,8 +97,8 @@ export class AuthController {
       process.env.JWT_SECRET!,
       {
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-      }
-    );
+      },
+    )
 
     return res.status(201).json({
       user: {
@@ -106,7 +108,7 @@ export class AuthController {
         role: user.role,
       },
       token,
-    });
+    })
   }
 
   async me(req: Request, res: Response) {
@@ -120,8 +122,76 @@ export class AuthController {
         active: true,
         createdAt: true,
       },
-    });
+    })
 
-    return res.json(user);
+    return res.json(user)
+  }
+
+  async google(req: Request, res: Response) {
+    try {
+      const { credential } = z
+        .object({ credential: z.string().min(1, 'Credential é obrigatório') })
+        .parse(req.body)
+
+      if (!credential) {
+        throw new AppError('Token do Google é obrigatório', 400)
+      }
+
+      console.log(
+        `[Auth Controller] Recebido credential com ${credential.length} caracteres`
+      )
+
+      let loginGoogleUsecase: LoginGoogleUsecase
+      try {
+        loginGoogleUsecase = container.resolve(LoginGoogleUsecase)
+      } catch (containerError) {
+        console.error('Container resolution error:', containerError)
+        throw new AppError(
+          'Erro ao carregar dependências. Tente novamente',
+          500
+        )
+      }
+
+      const result = await loginGoogleUsecase.auth({ token: credential })
+
+      console.log(
+        `[Auth Controller] Autenticação bem-sucedida para ${result.user.email}`
+      )
+
+      const jwtToken = jwt.sign(
+        {
+          userId: result.user.id,
+          email: result.user.email,
+          role: 'USER',
+          provider: 'google',
+        },
+        process.env.JWT_SECRET!,
+        {
+          expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+        },
+      )
+
+      return res.json({
+        user: result.user,
+        token: jwtToken,
+      })
+    } catch (error) {
+      console.error('Google auth error:', error)
+
+      if (error instanceof z.ZodError) {
+        throw new AppError(`Erro de validação: ${error.errors[0]?.message}`, 400)
+      }
+
+      if (error instanceof AppError) {
+        throw error
+      }
+
+      if (error instanceof Error) {
+        console.error(`[Auth Controller] Erro durante auth: ${error.message}`)
+        throw new AppError(error.message || 'Falha na autenticação com Google', 401)
+      }
+
+      throw new AppError('Falha na autenticação com Google', 401)
+    }
   }
 }

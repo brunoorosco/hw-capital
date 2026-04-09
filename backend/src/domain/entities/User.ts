@@ -3,11 +3,19 @@ export enum UserRole {
   USER = 'USER',
 }
 
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+}
+
 export class User {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string;
+  googleId?: string;
+  picture?: string;
+  provider: AuthProvider;
   role: UserRole;
   active: boolean;
   createdAt: Date;

@@ -8,6 +8,7 @@ import { AccessTypeProvider } from "./contexts/AccessTypeContext";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import { useAuth } from "./hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
@@ -123,7 +124,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/login" component={LoginPage} />
-
+      <Route path="/register" component={RegisterPage} />
       {/* Client routes */}
       <Route path="/dashboard">
         {() => <ProtectedRoute component={Dashboard} />}
