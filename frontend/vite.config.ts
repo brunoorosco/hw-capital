@@ -5,6 +5,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: "/", // ✅ garante paths absolutos
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
