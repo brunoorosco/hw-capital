@@ -9,12 +9,14 @@ export default defineConfig({
   bundle: true,
   skipNodeModulesBundle: true,
   external: ['@prisma/client', 'prisma', 'pino-pretty', 'pino-http'],
+  banner: {
+    js: `import { createRequire } from 'module'; const require = createRequire(import.meta.url);`,
+  },
   esbuildOptions(options) {
     options.alias = {
       '@domain': './src/domain',
       '@application': './src/application',
       '@infrastructure': './src/infrastructure',
     };
-    options.format = 'esm'; // 👈 força no nível do esbuild
   },
 });
