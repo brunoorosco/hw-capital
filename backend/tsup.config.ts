@@ -6,18 +6,15 @@ export default defineConfig({
   format: ['esm'],
   target: 'es2022',
   clean: true,
-  minify: false,
-  sourcemap: false,
-  tsconfig: 'tsconfig.json',
-  splitting: false,
   bundle: true,
   skipNodeModulesBundle: true,
-  external: ['@prisma/client', 'prisma', 'pino-pretty', 'pino-http'], // 👈 adicione aqui
+  external: ['@prisma/client', 'prisma', 'pino-pretty', 'pino-http'],
   esbuildOptions(options) {
     options.alias = {
       '@domain': './src/domain',
       '@application': './src/application',
       '@infrastructure': './src/infrastructure',
     };
+    options.format = 'esm'; // 👈 força no nível do esbuild
   },
 });
