@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
+    "module": "CommonJS",
     "lib": ["ES2022"],
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "allowJs": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "sourceMap": true, // remover ou trocar para false
+    "sourceMap": false,
     "removeComments": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
