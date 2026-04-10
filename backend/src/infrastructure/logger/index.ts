@@ -10,8 +10,8 @@ export const logger = pino(
         options: {
           colorize: false,
           translateTime: 'dd/mm/yyyy HH:MM:ss',
-          ignore: 'pid,hostname,method,url,statusCode,duration,ip,userAgent',
-          messageFormat: '{msg}',
+          ignore: 'pid,hostname,method,url,statusCode,duration,ip,userAgent,reqId',
+          messageFormat: '[{reqId}] {msg}',
         },
       })
     : undefined

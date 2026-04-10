@@ -4,39 +4,23 @@ import { logger } from '../../logger';
 
 export const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
-  const reqId = randomUUID();
+  const reqId = randomUUID().split('-')[0]; // curto: "081d0c11" em vez do UUID completo
 
-  // Child logger carrega o reqId em todos os logs desse ciclo
   const reqLogger = logger.child({ reqId });
-
-  // Expõe o logger no req para uso nos controllers
   (req as any).log = reqLogger;
 
-  reqLogger.info({
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    userAgent: req.get('user-agent'),
-  }, `→ ${req.method} ${req.url}`);
+  reqLogger.info(`→ ${req.method} ${req.originalUrl}`); // sem objeto, só a mensagem
 
   res.on('finish', () => {
     const duration = Date.now() - start;
+    const msg = `← ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`;
 
-    const logData = {
-      method: req.method,
-      url: req.url,
-      statusCode: res.statusCode,
-      duration,        // número é melhor que string para métricas/queries
-      ip: req.ip,
-    };
-
-    // 5xx = erro do servidor, 4xx = erro do cliente (warn), 2xx/3xx = info
     if (res.statusCode >= 500) {
-      reqLogger.error(logData, `← ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+      reqLogger.error(msg);
     } else if (res.statusCode >= 400) {
-      reqLogger.warn(logData, `← ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+      reqLogger.warn(msg);
     } else {
-      reqLogger.info(logData, `← ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+      reqLogger.info(msg);
     }
   });
 
