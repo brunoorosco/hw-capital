@@ -6,6 +6,7 @@ import { cashflowRoutes } from './cashflow.routes';
 import { planRouter } from './plan.routes';
 import { userRouter } from './user.routes';
 import { reportRoutes } from './report.routes';
+import { saasRoutes } from './saas.routes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use('/cashflow', cashflowRoutes);
 router.use('/plans', planRouter);
 router.use('/users', userRouter);
 router.use('/reports', reportRoutes);
+router.use('/saas', saasRoutes);
 // router.use('/files', fileRoutes);
 // router.use('/audit', auditRoutes);
 

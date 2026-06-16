@@ -21,8 +21,13 @@ export class ReportController {
       throw new AppError('clientId é obrigatório', 400);
     }
 
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
+    const clientWhere: any = { id: clientId };
+    if (req.user?.role !== 'ADMIN') {
+      clientWhere.responsibleId = req.user!.id;
+    }
+
+    const client = await prisma.client.findFirst({
+      where: clientWhere,
     });
 
     if (!client) {

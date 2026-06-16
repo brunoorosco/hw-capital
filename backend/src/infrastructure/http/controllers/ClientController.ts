@@ -14,16 +14,20 @@ const createClientSchema = z.object({
   plan: z.string(),
   monthlyValue: z.number().positive(),
   notes: z.string().optional(),
-  responsibleId: z.string().optional(),
 });
 
 const updateClientSchema = createClientSchema.partial();
 
 export class ClientController {
+  private userScope(req: Request): any {
+    if (req.user?.role === 'ADMIN') return {};
+    return { responsibleId: req.user!.id };
+  }
+
   async list(req: Request, res: Response) {
     const { search, status } = req.query;
 
-    const where: any = {};
+    const where: any = { ...this.userScope(req) };
 
     if (search) {
       where.OR = [
@@ -59,8 +63,10 @@ export class ClientController {
   async show(req: Request, res: Response) {
     const { id } = req.params;
 
-    const client = await prisma.client.findUnique({
-      where: { id },
+    const where: any = { id, ...this.userScope(req) };
+
+    const client = await prisma.client.findFirst({
+      where,
       include: {
         responsible: {
           select: {
@@ -90,7 +96,6 @@ export class ClientController {
   async create(req: Request, res: Response) {
     const data = createClientSchema.parse(req.body);
 
-    // Verificar se CNPJ já existe
     const cnpjExists = await prisma.client.findUnique({
       where: { cnpj: data.cnpj },
     });
@@ -103,6 +108,7 @@ export class ClientController {
       data: {
         ...data,
         status: 'active',
+        responsibleId: req.user!.id,
       },
       include: {
         responsible: {
@@ -122,9 +128,9 @@ export class ClientController {
     const { id } = req.params;
     const data = updateClientSchema.parse(req.body);
 
-    const clientExists = await prisma.client.findUnique({
-      where: { id },
-    });
+    const where: any = { id, ...this.userScope(req) };
+
+    const clientExists = await prisma.client.findFirst({ where });
 
     if (!clientExists) {
       throw new AppError('Cliente não encontrado', 404);
@@ -132,7 +138,10 @@ export class ClientController {
 
     const client = await prisma.client.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        responsibleId: undefined,
+      },
       include: {
         responsible: {
           select: {
@@ -150,9 +159,9 @@ export class ClientController {
   async delete(req: Request, res: Response) {
     const { id } = req.params;
 
-    const clientExists = await prisma.client.findUnique({
-      where: { id },
-    });
+    const where: any = { id, ...this.userScope(req) };
+
+    const clientExists = await prisma.client.findFirst({ where });
 
     if (!clientExists) {
       throw new AppError('Cliente não encontrado', 404);
@@ -168,11 +177,19 @@ export class ClientController {
   async deactivate(req: Request, res: Response) {
     const { id } = req.params;
 
-    const client = await prisma.client.update({
+    const where: any = { id, ...this.userScope(req) };
+
+    const client = await prisma.client.findFirst({ where });
+
+    if (!client) {
+      throw new AppError('Cliente não encontrado', 404);
+    }
+
+    const updated = await prisma.client.update({
       where: { id },
       data: { status: 'inactive' },
     });
 
-    return res.json(client);
+    return res.json(updated);
   }
 }
