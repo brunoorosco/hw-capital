@@ -39,6 +39,10 @@ import Reports from "./pages/bpo/Reports";
 import BpoPlans from "./pages/bpo/Plans";
 import BpoUsers from "./pages/bpo/Users";
 
+// Admin pages (SaaS)
+import SaasPlans from "./pages/bpo/admin/SaasPlans";
+import AdminPayments from "./pages/bpo/admin/AdminPayments";
+
 function ProtectedRoute({
   component: Component,
   adminOnly = false,
@@ -174,6 +178,14 @@ function Router() {
       </Route>
       <Route path="/bpo/users">
         {() => <ProtectedRoute component={BpoUsers} />}
+      </Route>
+
+      {/* BPO Admin routes (SaaS administration) */}
+      <Route path="/bpo/admin/plans">
+        {() => <ProtectedRoute component={SaasPlans} />}
+      </Route>
+      <Route path="/bpo/admin/payments">
+        {() => <ProtectedRoute component={AdminPayments} />}
       </Route>
 
       <Route path="/404" component={NotFound} />

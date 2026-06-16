@@ -223,4 +223,162 @@ export class SaasController {
 
     return res.json(payments);
   }
+
+  // ============================================
+  // ADMIN ENDPOINTS
+  // ============================================
+
+  async adminListPlans(req: Request, res: Response) {
+    const { includeInactive } = req.query;
+
+    const where: any = {};
+    if (includeInactive !== 'true') {
+      where.active = true;
+    }
+
+    const plans = await prisma.saasPlan.findMany({
+      where,
+      orderBy: { price: 'asc' },
+    });
+
+    return res.json(plans);
+  }
+
+  async adminCreatePlan(req: Request, res: Response) {
+    const schema = z.object({
+      name: z.string().min(1),
+      price: z.number().positive(),
+      maxClients: z.number().int().positive().default(5),
+      description: z.string().optional(),
+      features: z.array(z.string()).default([]),
+      mercadopagoPlanId: z.string().optional(),
+    });
+
+    const data = schema.parse(req.body);
+
+    const plan = await prisma.saasPlan.create({
+      data: {
+        ...data,
+        active: true,
+      },
+    });
+
+    return res.status(201).json(plan);
+  }
+
+  async adminUpdatePlan(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const schema = z.object({
+      name: z.string().min(1).optional(),
+      price: z.number().positive().optional(),
+      maxClients: z.number().int().positive().optional(),
+      description: z.string().optional(),
+      features: z.array(z.string()).optional(),
+      active: z.boolean().optional(),
+      mercadopagoPlanId: z.string().optional().nullable(),
+    });
+
+    const data = schema.parse(req.body);
+
+    const existing = await prisma.saasPlan.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new AppError('Plano não encontrado', 404);
+    }
+
+    const plan = await prisma.saasPlan.update({
+      where: { id },
+      data,
+    });
+
+    return res.json(plan);
+  }
+
+  async adminDeletePlan(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const existing = await prisma.saasPlan.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new AppError('Plano não encontrado', 404);
+    }
+
+    // Soft delete - just deactivate
+    await prisma.saasPlan.update({
+      where: { id },
+      data: { active: false },
+    });
+
+    return res.json({ message: 'Plano desativado com sucesso' });
+  }
+
+  async adminListPayments(req: Request, res: Response) {
+    const { status, startDate, endDate } = req.query as Record<string, string | undefined>;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (startDate || endDate) {
+      where.dueDate = {};
+      if (startDate) where.dueDate.gte = new Date(startDate);
+      if (endDate) where.dueDate.lte = new Date(endDate);
+    }
+
+    const payments = await prisma.payment.findMany({
+      where,
+      include: {
+        subscription: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+            plan: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+      orderBy: { dueDate: 'desc' },
+      take: 200,
+    });
+
+    return res.json(payments);
+  }
+
+  async adminListSubscriptions(req: Request, res: Response) {
+    const { status } = req.query as Record<string, string | undefined>;
+
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    const subscriptions = await prisma.saasSubscription.findMany({
+      where,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+        plan: {
+          select: { id: true, name: true, price: true },
+        },
+        payments: {
+          orderBy: { dueDate: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json(subscriptions);
+  }
 }

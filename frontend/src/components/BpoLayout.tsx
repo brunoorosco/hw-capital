@@ -14,6 +14,8 @@ import {
   CreditCard,
   UserCog,
   ChevronDown,
+  Shield,
+  Receipt,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,7 +58,56 @@ const diretoriaMenuItems = [
   { icon: UserCog, label: "Usuários", path: "/bpo/users" },
 ];
 
-// const perfilMenuItem = { icon: User, label: "Perfil", path: "/profile" };
+const adminMenuItems = [
+  { icon: CreditCard, label: "Planos de Assinatura", path: "/bpo/admin/plans" },
+  { icon: Receipt, label: "Pagamentos", path: "/bpo/admin/payments" },
+];
+
+function NavLink({
+  href,
+  active,
+  collapsed,
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  href: string;
+  active: boolean;
+  collapsed?: boolean;
+  icon: any;
+  label: string;
+  onClick?: () => void;
+}) {
+  const link = (
+    <Link href={href}>
+      <motion.div
+        whileHover={{ x: collapsed ? 0 : 4 }}
+        onClick={onClick}
+        className={`
+          flex items-center gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
+          ${active ? "bg-gold text-emerald-dark font-semibold shadow-lg" : "text-cream hover:bg-emerald-light hover:text-gold"}
+          ${collapsed ? "justify-center" : ""}
+        `}
+      >
+        <Icon className="w-5 h-5 shrink-0" />
+        {!collapsed && <span className="font-medium">{label}</span>}
+      </motion.div>
+    </Link>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right" className="bg-emerald-dark text-gold border-gold/30">
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return link;
+}
 
 interface BpoLayoutProps {
   children: React.ReactNode;
@@ -68,21 +119,25 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Manter Diretoria aberto se estiver em uma página de diretoria
   const isDiretoriaPage =
     location === "/bpo/plans" || location === "/bpo/users";
   const [diretoriaOpen, setDiretoriaOpen] = useState(isDiretoriaPage);
+
+  const isAdminPage =
+    location.startsWith("/bpo/admin/");
+  const [adminOpen, setAdminOpen] = useState(isAdminPage);
 
   const handleLogout = () => {
     logout?.();
   };
 
-  // Manter menu Diretoria aberto quando estiver em páginas de diretoria
   useEffect(() => {
-    if (isDiretoriaPage) {
-      setDiretoriaOpen(true);
-    }
+    if (isDiretoriaPage) setDiretoriaOpen(true);
   }, [isDiretoriaPage]);
+
+  useEffect(() => {
+    if (isAdminPage) setAdminOpen(true);
+  }, [isAdminPage]);
 
   const sidebarWidth = sidebarCollapsed ? "w-20" : "w-72";
 
@@ -134,51 +189,18 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
 
           {/* Menu Items */}
           <nav className="flex-1 p-4 space-y-2">
-            {/* Regular Menu Items */}
-            {bpoMenuItems.map((item, index) => {
-              const isActive = location === item.path;
-              const Icon = item.icon;
+            {bpoMenuItems.map((item, index) => (
+              <NavLink
+                key={index}
+                href={item.path}
+                active={location === item.path}
+                collapsed={sidebarCollapsed}
+                icon={item.icon}
+                label={item.label}
+              />
+            ))}
 
-              const menuItem = (
-                <Link key={index} href={item.path}>
-                  <motion.div
-                    whileHover={{ x: sidebarCollapsed ? 0 : 4 }}
-                    className={`
-                    flex items-center gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
-                    ${
-                      isActive
-                        ? "bg-gold text-emerald-dark font-semibold shadow-lg"
-                        : "text-cream hover:bg-emerald-light hover:text-gold"
-                    }
-                    ${sidebarCollapsed ? "justify-center" : ""}
-                  `}
-                  >
-                    <Icon className="w-5 h-5 shrink-0" />
-                    {!sidebarCollapsed && (
-                      <span className="font-medium">{item.label}</span>
-                    )}
-                  </motion.div>
-                </Link>
-              );
-
-              if (sidebarCollapsed) {
-                return (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      className="bg-emerald-dark text-gold border-gold/30"
-                    >
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return menuItem;
-            })}
-
-            {/* Diretoria Collapsible Menu */}
+            {/* Diretoria */}
             {!sidebarCollapsed ? (
               <Collapsible open={diretoriaOpen} onOpenChange={setDiretoriaOpen}>
                 <CollapsibleTrigger asChild>
@@ -199,24 +221,17 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                   {diretoriaMenuItems.map((item, index) => {
                     const isActive = location === item.path;
                     const Icon = item.icon;
-
                     return (
                       <Link key={index} href={item.path}>
                         <motion.div
                           whileHover={{ x: 4 }}
                           className={`
-                          flex items-center gap-2 px-3 pl-10 py-2 rounded-sm cursor-pointer transition-all duration-300
-                          ${
-                            isActive
-                              ? "bg-gold text-emerald-dark font-semibold shadow-lg"
-                              : "text-cream hover:bg-emerald-light hover:text-gold"
-                          }
-                        `}
+                            flex items-center gap-2 px-3 pl-10 py-2 rounded-sm cursor-pointer transition-all duration-300
+                            ${isActive ? "bg-gold text-emerald-dark font-semibold shadow-lg" : "text-cream hover:bg-emerald-light hover:text-gold"}
+                          `}
                         >
                           <Icon className="w-4 h-4 shrink-0" />
-                          <span className="text-sm font-medium truncate">
-                            {item.label}
-                          </span>
+                          <span className="text-sm font-medium truncate">{item.label}</span>
                         </motion.div>
                       </Link>
                     );
@@ -224,95 +239,77 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                 </CollapsibleContent>
               </Collapsible>
             ) : (
-              // Mostrar itens Diretoria individualmente quando colapsado
-              diretoriaMenuItems.map((item, index) => {
-                const isActive = location === item.path;
-                const Icon = item.icon;
-
-                return (
-                  <Tooltip key={index}>
-                    <TooltipTrigger asChild>
-                      <Link href={item.path}>
-                        <motion.div
-                          className={`
-                          flex items-center justify-center px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
-                          ${
-                            isActive
-                              ? "bg-gold text-emerald-dark font-semibold shadow-lg"
-                              : "text-cream hover:bg-emerald-light hover:text-gold"
-                          }
-                        `}
-                        >
-                          <Icon className="w-5 h-5 shrink-0" />
-                        </motion.div>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      className="bg-emerald-dark text-gold border-gold/30"
-                    >
-                      <p>Diretoria - {item.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })
+              diretoriaMenuItems.map((item, index) => (
+                <NavLink
+                  key={index}
+                  href={item.path}
+                  active={location === item.path}
+                  collapsed={true}
+                  icon={item.icon}
+                  label={`Diretoria - ${item.label}`}
+                />
+              ))
             )}
 
-            {/* Perfil Menu Item */}
-            {/* {(() => {
-              const isActive = location === perfilMenuItem.path;
-              const Icon = perfilMenuItem.icon;
-
-              const menuItem = (
-                <Link href={perfilMenuItem.path}>
-                  <motion.div
-                    whileHover={{ x: sidebarCollapsed ? 0 : 4 }}
-                    className={`
-                    flex items-center gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
-                    ${
-                      isActive
-                        ? "bg-gold text-emerald-dark font-semibold shadow-lg"
-                        : "text-cream hover:bg-emerald-light hover:text-gold"
-                    }
-                    ${sidebarCollapsed ? "justify-center" : ""}
-                  `}
-                  >
-                    <Icon className="w-5 h-5 shrink-0" />
-                    {!sidebarCollapsed && (
-                      <span className="font-medium">
-                        {perfilMenuItem.label}
-                      </span>
-                    )}
-                  </motion.div>
-                </Link>
-              );
-
-              if (sidebarCollapsed) {
-                return (
-                  <Tooltip>
-                    <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      className="bg-emerald-dark text-gold border-gold/30"
+            {/* Administração - visible only for ADMIN role */}
+            {user?.role === "ADMIN" && (
+              !sidebarCollapsed ? (
+                <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+                  <CollapsibleTrigger asChild>
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300 text-cream hover:bg-emerald-light hover:text-gold"
                     >
-                      <p>{perfilMenuItem.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return menuItem;
-            })()} */}
+                      <div className="flex items-center gap-3">
+                        <Shield className="w-5 h-5 shrink-0" />
+                        <span className="font-medium">Administração</span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform ${adminOpen ? "rotate-180" : ""}`}
+                      />
+                    </motion.div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1 mt-1">
+                    {adminMenuItems.map((item, index) => {
+                      const isActive = location === item.path;
+                      const Icon = item.icon;
+                      return (
+                        <Link key={index} href={item.path}>
+                          <motion.div
+                            whileHover={{ x: 4 }}
+                            className={`
+                              flex items-center gap-2 px-3 pl-10 py-2 rounded-sm cursor-pointer transition-all duration-300
+                              ${isActive ? "bg-gold text-emerald-dark font-semibold shadow-lg" : "text-cream hover:bg-emerald-light hover:text-gold"}
+                            `}
+                          >
+                            <Icon className="w-4 h-4 shrink-0" />
+                            <span className="text-sm font-medium truncate">{item.label}</span>
+                          </motion.div>
+                        </Link>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                adminMenuItems.map((item, index) => (
+                  <NavLink
+                    key={index}
+                    href={item.path}
+                    active={location === item.path}
+                    collapsed={true}
+                    icon={item.icon}
+                    label={`Admin - ${item.label}`}
+                  />
+                ))
+              )
+            )}
           </nav>
 
           {/* Theme Toggle and Logout */}
           <div className="p-4 border-t-2 border-gold/30 space-y-2">
-            {/* Theme Toggle */}
             <div className={sidebarCollapsed ? "flex justify-center" : ""}>
               <ThemeToggle />
             </div>
-
-            {/* Logout */}
             <div>
               {sidebarCollapsed ? (
                 <Tooltip>
@@ -326,10 +323,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                       <LogOut className="w-5 h-5" />
                     </motion.button>
                   </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="bg-emerald-dark text-red-400 border-red-400/30"
-                  >
+                  <TooltipContent side="right" className="bg-emerald-dark text-red-400 border-red-400/30">
                     <p>Sair</p>
                   </TooltipContent>
                 </Tooltip>
@@ -376,7 +370,6 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
               className="w-80 bg-emerald-dark border-gold/30 p-0"
             >
               <div className="flex flex-col h-full">
-                {/* Header */}
                 <SheetHeader className="p-6 border-b-2 border-gold/30 text-left">
                   <SheetTitle
                     className="text-3xl font-bold text-gold-light"
@@ -397,23 +390,17 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                   )}
                 </SheetHeader>
 
-                {/* Menu Items */}
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                   {bpoMenuItems.map((item, index) => {
                     const isActive = location === item.path;
                     const Icon = item.icon;
-
                     return (
                       <Link key={index} href={item.path}>
                         <div
                           onClick={() => setMobileMenuOpen(false)}
                           className={`
                             flex items-center gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
-                            ${
-                              isActive
-                                ? "bg-gold text-emerald-dark font-semibold shadow-lg"
-                                : "text-cream hover:bg-emerald-light hover:text-gold"
-                            }
+                            ${isActive ? "bg-gold text-emerald-dark font-semibold shadow-lg" : "text-cream hover:bg-emerald-light hover:text-gold"}
                           `}
                         >
                           <Icon className="w-5 h-5" />
@@ -422,9 +409,37 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                       </Link>
                     );
                   })}
+
+                  {/* Mobile admin menu */}
+                  {user?.role === "ADMIN" && (
+                    <>
+                      <div className="pt-4 border-t border-gold/20">
+                        <p className="text-gold text-xs font-semibold uppercase tracking-wider px-4 mb-2">
+                          Administração
+                        </p>
+                        {adminMenuItems.map((item, index) => {
+                          const isActive = location === item.path;
+                          const Icon = item.icon;
+                          return (
+                            <Link key={index} href={item.path}>
+                              <div
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`
+                                  flex items-center gap-3 px-4 py-3 rounded-sm cursor-pointer transition-all duration-300
+                                  ${isActive ? "bg-gold text-emerald-dark font-semibold shadow-lg" : "text-cream hover:bg-emerald-light hover:text-gold"}
+                                `}
+                              >
+                                <Icon className="w-5 h-5" />
+                                <span className="font-medium">{item.label}</span>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </nav>
 
-                {/* Logout Button */}
                 <div className="p-4 border-t-2 border-gold/30">
                   <button
                     onClick={() => {
