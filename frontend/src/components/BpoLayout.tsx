@@ -59,7 +59,9 @@ const diretoriaMenuItems = [
 ];
 
 const adminMenuItems = [
-  { icon: CreditCard, label: "Planos de Assinatura", path: "/bpo/admin/plans" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/bpo/admin" },
+  { icon: Users, label: "Assinantes", path: "/bpo/admin/assinantes" },
+  { icon: CreditCard, label: "Planos", path: "/bpo/admin/plans" },
   { icon: Receipt, label: "Pagamentos", path: "/bpo/admin/payments" },
 ];
 

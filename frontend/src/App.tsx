@@ -40,6 +40,8 @@ import BpoPlans from "./pages/bpo/Plans";
 import BpoUsers from "./pages/bpo/Users";
 
 // Admin pages (SaaS)
+import AdminDashboard from "./pages/bpo/admin/AdminDashboard";
+import Assinantes from "./pages/bpo/admin/Assinantes";
 import SaasPlans from "./pages/bpo/admin/SaasPlans";
 import AdminPayments from "./pages/bpo/admin/AdminPayments";
 
@@ -181,6 +183,12 @@ function Router() {
       </Route>
 
       {/* BPO Admin routes (SaaS administration) */}
+      <Route path="/bpo/admin">
+        {() => <ProtectedRoute component={AdminDashboard} />}
+      </Route>
+      <Route path="/bpo/admin/assinantes">
+        {() => <ProtectedRoute component={Assinantes} />}
+      </Route>
       <Route path="/bpo/admin/plans">
         {() => <ProtectedRoute component={SaasPlans} />}
       </Route>

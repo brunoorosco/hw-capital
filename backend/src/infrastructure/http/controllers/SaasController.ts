@@ -381,4 +381,84 @@ export class SaasController {
 
     return res.json(subscriptions);
   }
+
+  async adminListUsers(req: Request, res: Response) {
+    const { search, hasSubscription } = req.query as Record<string, string | undefined>;
+
+    const where: any = {};
+
+    if (hasSubscription === 'true') {
+      where.subscription = { isNot: null };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      include: {
+        subscription: {
+          include: {
+            plan: {
+              select: { id: true, name: true, price: true },
+            },
+          },
+        },
+        _count: {
+          select: { clients: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json(users);
+  }
+
+  async adminDashboard(req: Request, res: Response) {
+    const [
+      totalUsers,
+      totalSubscriptions,
+      activeSubscriptions,
+      totalClients,
+      totalPayments,
+      revenue,
+      recentPayments,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.saasSubscription.count(),
+      prisma.saasSubscription.count({ where: { status: 'ACTIVE' } }),
+      prisma.client.count(),
+      prisma.payment.count(),
+      prisma.payment.aggregate({
+        where: { status: 'PAID' },
+        _sum: { amount: true },
+      }),
+      prisma.payment.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          subscription: {
+            include: {
+              user: { select: { name: true, email: true } },
+              plan: { select: { name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return res.json({
+      totalUsers,
+      totalSubscriptions,
+      activeSubscriptions,
+      totalClients,
+      totalPayments,
+      totalRevenue: revenue._sum.amount || 0,
+      recentPayments,
+    });
+  }
 }
