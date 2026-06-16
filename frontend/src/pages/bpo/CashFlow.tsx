@@ -481,7 +481,30 @@ export default function CashFlow() {
 
         {/* Action Buttons */}
         <div className="flex gap-4 justify-end">
-          <Button variant="outline" className="border-gold/30 hover:bg-gold/10">
+          <Button
+            variant="outline"
+            className="border-gold/30 hover:bg-gold/10"
+            onClick={async () => {
+              const token = localStorage.getItem('hw-token');
+              const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
+              const params = new URLSearchParams({ clientId: selectedClient });
+
+              try {
+                const response = await fetch(`${apiUrl}/reports/cashflow?${params}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (!response.ok) throw new Error('Erro ao gerar relatório');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                setTimeout(() => URL.revokeObjectURL(url), 30000);
+              } catch {
+                toast.error('Erro ao gerar relatório');
+              }
+            }}
+          >
             <Download className="w-4 h-4 mr-2" />
             Exportar Relatório
           </Button>
