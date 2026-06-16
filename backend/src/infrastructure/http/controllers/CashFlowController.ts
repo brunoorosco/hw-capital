@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '../../database/prisma/PrismaClient';
 import { z } from 'zod';
 import { AppError } from '../middlewares/errorHandler';
+import { CashFlowCache } from '../../cache/CashFlowCache';
 
 const prisma = PrismaClient.getInstance();
 
@@ -17,8 +18,19 @@ const createCashFlowSchema = z.object({
 });
 
 export class CashFlowController {
+  private cache = CashFlowCache.getInstance();
+
   async list(req: Request, res: Response) {
-    const { clientId, type, startDate, endDate } = req.query;
+    const { clientId, type, startDate, endDate } = req.query as Record<string, string | undefined>;
+
+    const cacheKey = `list:${clientId || 'all'}:${type || 'all'}:${startDate || ''}:${endDate || ''}`;
+
+    if (clientId) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+    }
 
     const where: any = {};
 
@@ -55,6 +67,10 @@ export class CashFlowController {
       },
     });
 
+    if (clientId) {
+      this.cache.set(cacheKey, movements);
+    }
+
     return res.json(movements);
   }
 
@@ -89,12 +105,23 @@ export class CashFlowController {
       },
     });
 
+    this.cache.clear(data.clientId);
+
     return res.status(201).json(movement);
   }
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
     const data = req.body;
+
+    const existing = await prisma.cashFlowMovement.findUnique({
+      where: { id },
+      select: { clientId: true },
+    });
+
+    if (existing) {
+      this.cache.clear(existing.clientId);
+    }
 
     const movement = await prisma.cashFlowMovement.update({
       where: { id },
@@ -107,11 +134,24 @@ export class CashFlowController {
       },
     });
 
+    if (data.clientId && data.clientId !== existing?.clientId) {
+      this.cache.clear(data.clientId);
+    }
+
     return res.json(movement);
   }
 
   async delete(req: Request, res: Response) {
     const { id } = req.params;
+
+    const movement = await prisma.cashFlowMovement.findUnique({
+      where: { id },
+      select: { clientId: true },
+    });
+
+    if (movement) {
+      this.cache.clear(movement.clientId);
+    }
 
     await prisma.cashFlowMovement.delete({
       where: { id },
@@ -121,7 +161,16 @@ export class CashFlowController {
   }
 
   async summary(req: Request, res: Response) {
-    const { clientId, startDate, endDate } = req.query;
+    const { clientId, startDate, endDate } = req.query as Record<string, string | undefined>;
+
+    const cacheKey = `summary:${clientId || 'all'}:${startDate || ''}:${endDate || ''}`;
+
+    if (clientId) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+    }
 
     const where: any = {};
 
@@ -151,11 +200,17 @@ export class CashFlowController {
       .filter(m => m.type === 'SAIDA')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    return res.json({
+    const result = {
       entradas,
       saidas,
       saldo: entradas - saidas,
       totalMovimentos: movements.length,
-    });
+    };
+
+    if (clientId) {
+      this.cache.set(cacheKey, result);
+    }
+
+    return res.json(result);
   }
 }
