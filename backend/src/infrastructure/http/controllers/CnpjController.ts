@@ -5,8 +5,9 @@ import { AppError } from '../middlewares/errorHandler';
 export class CnpjController {
   async lookup(req: Request, res: Response) {
     const { cnpj } = req.params;
+    const cnpjValue = Array.isArray(cnpj) ? cnpj[0] : cnpj;
 
-    const cleanCnpj = cnpj.replace(/\D/g, '');
+    const cleanCnpj = cnpjValue.replace(/\D/g, '');
 
     if (cleanCnpj.length !== 14) {
       throw new AppError('CNPJ inválido', 400);
