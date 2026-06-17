@@ -7,6 +7,7 @@ import { planRouter } from './plan.routes';
 import { userRouter } from './user.routes';
 import { reportRoutes } from './report.routes';
 import { saasRoutes } from './saas.routes';
+import { cnpjRoutes } from './cnpj.routes';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/plans', planRouter);
 router.use('/users', userRouter);
 router.use('/reports', reportRoutes);
 router.use('/saas', saasRoutes);
+router.use('/cnpj', cnpjRoutes);
 // router.use('/files', fileRoutes);
 // router.use('/audit', auditRoutes);
 

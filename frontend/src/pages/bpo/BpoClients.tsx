@@ -7,11 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Edit, Trash2, Eye, Users, TrendingUp, DollarSign } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, Users, TrendingUp, DollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import BpoLayout from "@/components/BpoLayout";
 import { api } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { maskCNPJ } from "@/lib/validators";
 
 interface Client {
   id: string;
@@ -54,6 +55,7 @@ export default function BpoClients() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -89,6 +91,44 @@ export default function BpoClients() {
       toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCnpjLookup = async () => {
+    const cleanCnpj = formData.cnpj.replace(/\D/g, '');
+    if (cleanCnpj.length !== 14) {
+      toast.error('CNPJ inválido');
+      return;
+    }
+
+    try {
+      setCnpjLoading(true);
+      const response = await api.get(`/cnpj/${cleanCnpj}`);
+      const data = response.data;
+
+      const fullAddress = [
+        data.logradouro,
+        data.numero,
+        data.complemento,
+        data.bairro,
+        `${data.cidade} - ${data.estado}`,
+        data.cep,
+      ].filter(Boolean).join(', ');
+
+      setFormData(prev => ({
+        ...prev,
+        name: data.razaoSocial || data.nomeFantasia || prev.name,
+        address: fullAddress || prev.address,
+        email: data.email || prev.email,
+        phone: data.telefone || prev.phone,
+      }));
+
+      toast.success('Dados do CNPJ carregados!');
+    } catch (error: any) {
+      console.error('Erro ao consultar CNPJ:', error);
+      toast.error(error.response?.data?.message || 'Erro ao consultar CNPJ');
+    } finally {
+      setCnpjLoading(false);
     }
   };
 
@@ -374,6 +414,31 @@ export default function BpoClients() {
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
+                <Label>CNPJ</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      value={maskCNPJ(formData.cnpj)}
+                      onChange={(e) => setFormData({...formData, cnpj: e.target.value})}
+                      placeholder="00.000.000/0000-00"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCnpjLookup}
+                    disabled={cnpjLoading || formData.cnpj.replace(/\D/g, '').length !== 14}
+                    className="border-gold/30 text-gold hover:bg-gold/10"
+                  >
+                    {cnpjLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <div className="col-span-2">
                 <Label>Nome</Label>
                 <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
               </div>
@@ -385,9 +450,9 @@ export default function BpoClients() {
                 <Label>Telefone</Label>
                 <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
               </div>
-              <div>
-                <Label>CNPJ</Label>
-                <Input value={formData.cnpj} onChange={(e) => setFormData({...formData, cnpj: e.target.value})} />
+              <div className="col-span-2">
+                <Label>Endereço</Label>
+                <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
               </div>
               <div>
                 <Label>Plano</Label>
@@ -410,10 +475,6 @@ export default function BpoClients() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="col-span-2">
-                <Label>Endereço</Label>
-                <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
               </div>
               <div>
                 <Label>Valor Mensal</Label>
