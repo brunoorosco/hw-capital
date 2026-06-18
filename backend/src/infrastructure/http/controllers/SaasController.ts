@@ -418,6 +418,29 @@ export class SaasController {
     return res.json(users);
   }
 
+  async adminToggleUserRole(req: Request, res: Response) {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      throw new AppError('Usuário não encontrado', 404);
+    }
+
+    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+      select: { id: true, name: true, email: true, role: true, active: true },
+    });
+
+    return res.json(updated);
+  }
+
   async adminUserPayments(req: Request, res: Response) {
     const { userId } = req.params;
 

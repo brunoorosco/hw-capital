@@ -24,6 +24,7 @@ saasRoutes.get('/admin/payments', authMiddleware, adminMiddleware, (req, res) =>
 saasRoutes.get('/admin/subscriptions', authMiddleware, adminMiddleware, (req, res) => saasController.adminListSubscriptions(req, res));
 saasRoutes.get('/admin/users', authMiddleware, adminMiddleware, (req, res) => saasController.adminListUsers(req, res));
 saasRoutes.get('/admin/users/:userId/payments', authMiddleware, adminMiddleware, (req, res) => saasController.adminUserPayments(req, res));
+saasRoutes.patch('/admin/users/:userId/role', authMiddleware, adminMiddleware, (req, res) => saasController.adminToggleUserRole(req, res));
 saasRoutes.get('/admin/dashboard', authMiddleware, adminMiddleware, (req, res) => saasController.adminDashboard(req, res));
 
 export { saasRoutes };

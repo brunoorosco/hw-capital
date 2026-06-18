@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Eye, Loader2 } from "lucide-react";
+import { Search, Eye, Loader2, Shield, ShieldOff } from "lucide-react";
 import BpoLayout from "@/components/BpoLayout";
 import { api } from "@/lib/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface AssinanteUser {
   id: string;
@@ -85,6 +85,28 @@ export default function Assinantes() {
       setUserPayments([]);
     } finally {
       setPaymentsLoading(false);
+    }
+  };
+
+  const queryClient = useQueryClient();
+  const [roleLoading, setRoleLoading] = useState<string | null>(null);
+
+  const handleToggleRole = async (user: AssinanteUser) => {
+    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+    const confirmMsg = user.role === 'ADMIN'
+      ? `Remover acesso de admin de "${user.name}"?`
+      : `Tornar "${user.name}" um admin do SaaS?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setRoleLoading(user.id);
+      await api.patch(`/saas/admin/users/${user.id}/role`);
+      queryClient.invalidateQueries({ queryKey: ["saas-admin-users"] });
+    } catch {
+      // toast já é exibido pelo interceptor
+    } finally {
+      setRoleLoading(null);
     }
   };
 
@@ -181,9 +203,17 @@ export default function Assinantes() {
                     return (
                       <tr key={user.id} className="border-b border-gold/10 hover:bg-gold/5 transition-colors">
                         <td className="p-4">
-                          <div>
-                            <p className="text-sm font-medium text-charcoal">{user.name}</p>
-                            <p className="text-xs text-charcoal-light">{user.email}</p>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="text-sm font-medium text-charcoal">{user.name}</p>
+                              <p className="text-xs text-charcoal-light">{user.email}</p>
+                            </div>
+                            {user.role === 'ADMIN' && (
+                              <Badge className="bg-purple-600 text-white text-xs gap-1" variant="default">
+                                <Shield className="w-3 h-3" />
+                                Admin
+                              </Badge>
+                            )}
                           </div>
                         </td>
                         <td className="p-4">
@@ -213,17 +243,34 @@ export default function Assinantes() {
                           {sub ? formatDate(sub.currentPeriodEnd) : "—"}
                         </td>
                         <td className="p-4 text-right">
-                          {sub && (
+                          <div className="flex items-center justify-end gap-1">
+                            {sub && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => fetchPayments(user)}
+                                className="text-gold hover:text-gold-dark hover:bg-gold/10"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => fetchPayments(user)}
-                              className="text-gold hover:text-gold-dark hover:bg-gold/10"
+                              onClick={() => handleToggleRole(user)}
+                              disabled={roleLoading === user.id}
+                              className={user.role === 'ADMIN' ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-100' : 'text-charcoal-light hover:text-charcoal hover:bg-charcoal/5'}
+                              title={user.role === 'ADMIN' ? 'Remover admin' : 'Tornar admin'}
                             >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Pagamentos
+                              {roleLoading === user.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : user.role === 'ADMIN' ? (
+                                <ShieldOff className="w-4 h-4" />
+                              ) : (
+                                <Shield className="w-4 h-4" />
+                              )}
                             </Button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
