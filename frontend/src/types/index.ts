@@ -1,7 +1,7 @@
 export interface User {
   name: string;
   email: string;
-  role: "client" | "admin" | "ADMIN" | "USER"; // Aceita tanto frontend quanto backend roles
+  role: "client" | "admin" | "ADMIN" | "USER" | "SUPER_ADMIN"; // Aceita tanto frontend quanto backend roles
   phone?: string;
   cpfCnpj?: string;
 }
