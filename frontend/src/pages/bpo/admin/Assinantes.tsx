@@ -92,7 +92,6 @@ export default function Assinantes() {
   const [roleLoading, setRoleLoading] = useState<string | null>(null);
 
   const handleToggleRole = async (user: AssinanteUser) => {
-    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
     const confirmMsg = user.role === 'ADMIN'
       ? `Remover acesso de admin de "${user.name}"?`
       : `Tornar "${user.name}" um admin do SaaS?`;
