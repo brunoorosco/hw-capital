@@ -39,7 +39,7 @@ interface User {
   name: string;
   email: string;
   phone: string;
-  role: "admin" | "user";
+  role: "SUPER_ADMIN" | "ADMIN" | "USER";
   active: boolean;
   createdAt: string;
 }
@@ -50,7 +50,7 @@ const mockUsers: User[] = [
     name: "Admin Orostec Capital",
     email: "admin@hwcapital.com.br",
     phone: "(11) 98765-4321",
-    role: "admin",
+    role: "ADMIN",
     active: true,
     createdAt: "2025-01-15",
   },
@@ -59,7 +59,7 @@ const mockUsers: User[] = [
     name: "Maria Silva",
     email: "maria.silva@hwcapital.com.br",
     phone: "(11) 97654-3210",
-    role: "user",
+    role: "USER",
     active: true,
     createdAt: "2025-02-01",
   },
@@ -68,7 +68,7 @@ const mockUsers: User[] = [
     name: "João Santos",
     email: "joao.santos@hwcapital.com.br",
     phone: "(11) 96543-2109",
-    role: "user",
+    role: "USER",
     active: true,
     createdAt: "2025-02-05",
   },
@@ -87,7 +87,7 @@ export default function Users() {
     name: "",
     email: "",
     phone: "",
-    role: "user" as "admin" | "user",
+    role: "USER" as "SUPER_ADMIN" | "ADMIN" | "USER",
     password: "",
   });
 
@@ -96,7 +96,7 @@ export default function Users() {
       name: "",
       email: "",
       phone: "",
-      role: "user",
+    role: "USER",
       password: "",
     });
   };
@@ -338,7 +338,7 @@ export default function Users() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role" className="text-charcoal font-semibold">Perfil *</Label>
-                  <Select value={formData.role} onValueChange={(value: "admin" | "user") => setFormData({ ...formData, role: value })}>
+                  <Select value={formData.role} onValueChange={(value: "SUPER_ADMIN" | "ADMIN" | "USER") => setFormData({ ...formData, role: value })}>
                     <SelectTrigger className="bg-cream border-gold/20">
                       <SelectValue />
                     </SelectTrigger>
@@ -421,7 +421,7 @@ export default function Users() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-role" className="text-charcoal font-semibold">Perfil *</Label>
-                  <Select value={formData.role} onValueChange={(value: "admin" | "user") => setFormData({ ...formData, role: value })}>
+                  <Select value={formData.role} onValueChange={(value: "SUPER_ADMIN" | "ADMIN" | "USER") => setFormData({ ...formData, role: value })}>
                     <SelectTrigger className="bg-cream border-gold/20">
                       <SelectValue />
                     </SelectTrigger>
