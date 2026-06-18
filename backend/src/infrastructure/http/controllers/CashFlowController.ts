@@ -21,7 +21,7 @@ export class CashFlowController {
   private cache = CashFlowCache.getInstance();
 
   private async validateClientAccess(req: Request, clientId: string): Promise<void> {
-    if (req.user?.role === 'ADMIN') return;
+    if (req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'ADMIN') return;
     const client = await prisma.client.findFirst({
       where: { id: clientId, responsibleId: req.user!.id },
     });
@@ -31,7 +31,7 @@ export class CashFlowController {
   }
 
   private async buildClientScope(req: Request): Promise<any> {
-    if (req.user?.role === 'ADMIN') return {};
+    if (req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'ADMIN') return {};
     const clients = await prisma.client.findMany({
       where: { responsibleId: req.user!.id },
       select: { id: true },

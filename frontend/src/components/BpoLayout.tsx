@@ -254,7 +254,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
             )}
 
             {/* Administração - visible only for ADMIN role */}
-            {user?.role === "ADMIN" && (
+            {(user?.role === "SUPER_ADMIN" || user?.role === "ADMIN") && (
               !sidebarCollapsed ? (
                 <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
                   <CollapsibleTrigger asChild>
@@ -413,7 +413,7 @@ export default function BpoLayout({ children }: BpoLayoutProps) {
                   })}
 
                   {/* Mobile admin menu */}
-                  {user?.role === "ADMIN" && (
+                  {(user?.role === "SUPER_ADMIN" || user?.role === "ADMIN") && (
                     <>
                       <div className="pt-4 border-t border-gold/20">
                         <p className="text-gold text-xs font-semibold uppercase tracking-wider px-4 mb-2">

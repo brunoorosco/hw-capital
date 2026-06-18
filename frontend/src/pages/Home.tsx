@@ -123,7 +123,7 @@ export default function Home() {
             </div>
             <nav className="flex items-center gap-6">
               {isAuthenticated ? (
-                <Link href={user?.role === "admin" ? "/admin" : "/dashboard"}>
+                <Link href={user?.role === "SUPER_ADMIN" || user?.role === "ADMIN" ? "/admin" : "/dashboard"}>
                   <Button>Acessar Plataforma</Button>
                 </Link>
               ) : (

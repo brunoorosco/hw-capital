@@ -224,8 +224,8 @@ export default function Users() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="text-lg font-bold text-charcoal">{user.name}</h3>
-                          <Badge className={user.role === "admin" ? "bg-gold text-emerald-dark" : "bg-emerald/10 text-emerald border-emerald/20"}>
-                            {user.role === "admin" ? "Admin" : "Usuário"}
+                          <Badge className={user.role === "SUPER_ADMIN" ? "bg-red-600 text-white" : user.role === "ADMIN" ? "bg-gold text-emerald-dark" : "bg-emerald/10 text-emerald border-emerald/20"}>
+                            {user.role === "SUPER_ADMIN" ? "Super Admin" : user.role === "ADMIN" ? "Admin" : "Usuário"}
                           </Badge>
                           <Badge className={user.active ? "bg-emerald/10 text-emerald border-emerald/20" : "bg-gray-100 text-gray-600 border-gray-200"}>
                             {user.active ? "Ativo" : "Inativo"}

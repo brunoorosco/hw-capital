@@ -22,7 +22,7 @@ export class ReportController {
     }
 
     const clientWhere: any = { id: clientId };
-    if (req.user?.role !== 'ADMIN') {
+    if (req.user?.role !== 'SUPER_ADMIN' && req.user?.role !== 'ADMIN') {
       clientWhere.responsibleId = req.user!.id;
     }
 

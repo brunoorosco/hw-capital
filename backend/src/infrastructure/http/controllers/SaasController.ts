@@ -430,7 +430,12 @@ export class SaasController {
       throw new AppError('Usuário não encontrado', 404);
     }
 
-    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+    const roleCycle: Record<string, string> = {
+      USER: 'ADMIN',
+      ADMIN: 'SUPER_ADMIN',
+      SUPER_ADMIN: 'USER',
+    };
+    const newRole = roleCycle[user.role] || 'USER';
 
     const updated = await prisma.user.update({
       where: { id: userId },

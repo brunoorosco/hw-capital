@@ -20,7 +20,7 @@ const updateClientSchema = createClientSchema.partial();
 
 export class ClientController {
   private userScope(req: Request): any {
-    if (req.user?.role === 'ADMIN') return {};
+    if (req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'ADMIN') return {};
     return { responsibleId: req.user!.id };
   }
 

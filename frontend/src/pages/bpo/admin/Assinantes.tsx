@@ -92,9 +92,9 @@ export default function Assinantes() {
   const [roleLoading, setRoleLoading] = useState<string | null>(null);
 
   const handleToggleRole = async (user: AssinanteUser) => {
-    const confirmMsg = user.role === 'ADMIN'
-      ? `Remover acesso de admin de "${user.name}"?`
-      : `Tornar "${user.name}" um admin do SaaS?`;
+    const roleLabels: Record<string, string> = { USER: 'Usuário', ADMIN: 'Admin', SUPER_ADMIN: 'Super Admin' };
+    const nextRoleLabels: Record<string, string> = { USER: 'Admin', ADMIN: 'Super Admin', SUPER_ADMIN: 'Usuário' };
+    const confirmMsg = `Alterar "${user.name}" de ${roleLabels[user.role] || user.role} para ${nextRoleLabels[user.role] || 'Usuário'}?`;
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -207,10 +207,15 @@ export default function Assinantes() {
                               <p className="text-sm font-medium text-charcoal">{user.name}</p>
                               <p className="text-xs text-charcoal-light">{user.email}</p>
                             </div>
-                            {user.role === 'ADMIN' && (
-                              <Badge className="bg-purple-600 text-white text-xs gap-1" variant="default">
+                            {user.role !== 'USER' && (
+                              <Badge
+                                className={`text-white text-xs gap-1 ${
+                                  user.role === 'SUPER_ADMIN' ? 'bg-red-600' : 'bg-purple-600'
+                                }`}
+                                variant="default"
+                              >
                                 <Shield className="w-3 h-3" />
-                                Admin
+                                {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
                               </Badge>
                             )}
                           </div>
@@ -258,12 +263,20 @@ export default function Assinantes() {
                               size="sm"
                               onClick={() => handleToggleRole(user)}
                               disabled={roleLoading === user.id}
-                              className={user.role === 'ADMIN' ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-100' : 'text-charcoal-light hover:text-charcoal hover:bg-charcoal/5'}
-                              title={user.role === 'ADMIN' ? 'Remover admin' : 'Tornar admin'}
+                              className={
+                                user.role === 'SUPER_ADMIN' ? 'text-red-600 hover:text-red-700 hover:bg-red-100' :
+                                user.role === 'ADMIN' ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-100' :
+                                'text-charcoal-light hover:text-charcoal hover:bg-charcoal/5'
+                              }
+                              title={
+                                user.role === 'SUPER_ADMIN' ? 'Rebaixar para USER' :
+                                user.role === 'ADMIN' ? 'Promover a SUPER_ADMIN' :
+                                'Tornar Admin'
+                              }
                             >
                               {roleLoading === user.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : user.role === 'ADMIN' ? (
+                              ) : user.role === 'SUPER_ADMIN' ? (
                                 <ShieldOff className="w-4 h-4" />
                               ) : (
                                 <Shield className="w-4 h-4" />

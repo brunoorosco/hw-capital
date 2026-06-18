@@ -53,8 +53,20 @@ export function adminMiddleware(req: Request, res: Response, next: NextFunction)
     throw new AppError('Não autorizado', 401);
   }
 
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'SUPER_ADMIN' && req.user.role !== 'ADMIN') {
     throw new AppError('Acesso negado. Apenas administradores.', 403);
+  }
+
+  return next();
+}
+
+export function superAdminMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    throw new AppError('Não autorizado', 401);
+  }
+
+  if (req.user.role !== 'SUPER_ADMIN') {
+    throw new AppError('Acesso negado. Apenas super administradores.', 403);
   }
 
   return next();

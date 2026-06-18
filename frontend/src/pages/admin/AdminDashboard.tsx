@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   const stats = [
     {
       title: "Total de Clientes",
-      value: users?.filter((u) => u.role === "user").length || 0,
+      value: users?.filter((u) => u.role === "USER").length || 0,
       icon: Users,
       description: "Clientes ativos na plataforma",
       color: "text-blue-600",
