@@ -418,6 +418,43 @@ export class SaasController {
     return res.json(users);
   }
 
+  async adminUserPayments(req: Request, res: Response) {
+    const { userId } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!user) {
+      throw new AppError('Usuário não encontrado', 404);
+    }
+
+    const subscription = await prisma.saasSubscription.findUnique({
+      where: { userId },
+      include: { plan: { select: { id: true, name: true, price: true } } },
+    });
+
+    if (!subscription) {
+      return res.json({ user, payments: [] });
+    }
+
+    const payments = await prisma.payment.findMany({
+      where: { subscriptionId: subscription.id },
+      orderBy: { dueDate: 'desc' },
+    });
+
+    return res.json({
+      user,
+      subscription: {
+        id: subscription.id,
+        status: subscription.status,
+        plan: subscription.plan,
+      },
+      payments,
+    });
+  }
+
   async adminDashboard(req: Request, res: Response) {
     const [
       totalUsers,

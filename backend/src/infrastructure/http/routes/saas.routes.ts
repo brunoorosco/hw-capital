@@ -23,6 +23,7 @@ saasRoutes.delete('/admin/plans/:id', authMiddleware, adminMiddleware, (req, res
 saasRoutes.get('/admin/payments', authMiddleware, adminMiddleware, (req, res) => saasController.adminListPayments(req, res));
 saasRoutes.get('/admin/subscriptions', authMiddleware, adminMiddleware, (req, res) => saasController.adminListSubscriptions(req, res));
 saasRoutes.get('/admin/users', authMiddleware, adminMiddleware, (req, res) => saasController.adminListUsers(req, res));
+saasRoutes.get('/admin/users/:userId/payments', authMiddleware, adminMiddleware, (req, res) => saasController.adminUserPayments(req, res));
 saasRoutes.get('/admin/dashboard', authMiddleware, adminMiddleware, (req, res) => saasController.adminDashboard(req, res));
 
 export { saasRoutes };

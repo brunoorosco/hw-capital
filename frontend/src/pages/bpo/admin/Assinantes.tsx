@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Eye, Loader2 } from "lucide-react";
 import BpoLayout from "@/components/BpoLayout";
 import { api } from "@/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
@@ -26,12 +28,33 @@ interface AssinanteUser {
   };
 }
 
+interface Payment {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paymentMethod: string | null;
+  mercadopagoId: string | null;
+  mercadopagoUrl: string | null;
+  paidAt: string | null;
+  dueDate: string;
+  createdAt: string;
+}
+
 const subStatusLabels: Record<string, { label: string; variant: string }> = {
   ACTIVE: { label: "Ativo", variant: "bg-green-500" },
   TRIALING: { label: "Trial", variant: "bg-blue-500" },
   CANCELED: { label: "Cancelado", variant: "bg-gray-500" },
   EXPIRED: { label: "Expirado", variant: "bg-red-500" },
   OVERDUE: { label: "Vencido", variant: "bg-orange-500" },
+};
+
+const paymentStatusLabels: Record<string, { label: string; variant: string }> = {
+  PAID: { label: "Pago", variant: "bg-green-500" },
+  PENDING: { label: "Pendente", variant: "bg-yellow-500" },
+  OVERDUE: { label: "Vencido", variant: "bg-red-500" },
+  CANCELED: { label: "Cancelado", variant: "bg-gray-500" },
+  REFUNDED: { label: "Reembolsado", variant: "bg-purple-500" },
 };
 
 function formatDate(date: string | null) {
@@ -46,6 +69,24 @@ function formatCurrency(value: number) {
 export default function Assinantes() {
   const [search, setSearch] = useState("");
   const [filterSub, setFilterSub] = useState("");
+  const [selectedUser, setSelectedUser] = useState<AssinanteUser | null>(null);
+  const [userPayments, setUserPayments] = useState<Payment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsDialogOpen, setPaymentsDialogOpen] = useState(false);
+
+  const fetchPayments = async (user: AssinanteUser) => {
+    setSelectedUser(user);
+    setPaymentsLoading(true);
+    setPaymentsDialogOpen(true);
+    try {
+      const res = await api.get(`/saas/admin/users/${user.id}/payments`);
+      setUserPayments(res.data.payments || []);
+    } catch {
+      setUserPayments([]);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
 
   const { data: users = [], isLoading } = useQuery<AssinanteUser[]>({
     queryKey: ["saas-admin-users", filterSub],
@@ -122,12 +163,13 @@ export default function Assinantes() {
                   <th className="text-left p-4 text-sm font-semibold">Clientes BPO</th>
                   <th className="text-left p-4 text-sm font-semibold">Início</th>
                   <th className="text-left p-4 text-sm font-semibold">Vencimento</th>
+                  <th className="text-right p-4 text-sm font-semibold">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-charcoal-light">
+                    <td colSpan={7} className="p-8 text-center text-charcoal-light">
                       Nenhum assinante encontrado
                     </td>
                   </tr>
@@ -170,6 +212,19 @@ export default function Assinantes() {
                         <td className="p-4 text-sm text-charcoal">
                           {sub ? formatDate(sub.currentPeriodEnd) : "—"}
                         </td>
+                        <td className="p-4 text-right">
+                          {sub && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => fetchPayments(user)}
+                              className="text-gold hover:text-gold-dark hover:bg-gold/10"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Pagamentos
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
@@ -178,6 +233,77 @@ export default function Assinantes() {
             </table>
           </div>
         </Card>
+
+        {/* Payment History Dialog */}
+        <Dialog open={paymentsDialogOpen} onOpenChange={setPaymentsDialogOpen}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-ivory border-gold/30">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-charcoal" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Histórico de Pagamentos
+              </DialogTitle>
+              {selectedUser && (
+                <p className="text-charcoal-light">
+                  {selectedUser.name} — {selectedUser.email}
+                </p>
+              )}
+            </DialogHeader>
+
+            {paymentsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="w-8 h-8 animate-spin text-gold" />
+              </div>
+            ) : userPayments.length === 0 ? (
+              <div className="text-center text-charcoal-light py-8">
+                Nenhum pagamento encontrado
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gold/20 bg-emerald text-cream">
+                      <th className="text-left p-3 text-sm font-semibold">Valor</th>
+                      <th className="text-left p-3 text-sm font-semibold">Vencimento</th>
+                      <th className="text-left p-3 text-sm font-semibold">Pagamento</th>
+                      <th className="text-left p-3 text-sm font-semibold">Método</th>
+                      <th className="text-left p-3 text-sm font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userPayments.map((payment) => {
+                      const st = paymentStatusLabels[payment.status] || { label: payment.status, variant: "bg-gray-500" };
+                      const methodLabels: Record<string, string> = {
+                        credit_card: "Cartão",
+                        boleto: "Boleto",
+                        pix: "Pix",
+                      };
+                      return (
+                        <tr key={payment.id} className="border-b border-gold/10 hover:bg-gold/5 transition-colors">
+                          <td className="p-3 text-sm font-semibold text-charcoal">
+                            {formatCurrency(Number(payment.amount))}
+                          </td>
+                          <td className="p-3 text-sm text-charcoal">
+                            {formatDate(payment.dueDate)}
+                          </td>
+                          <td className="p-3 text-sm text-charcoal">
+                            {payment.paidAt ? formatDate(payment.paidAt) : "—"}
+                          </td>
+                          <td className="p-3 text-sm text-charcoal">
+                            {payment.paymentMethod ? methodLabels[payment.paymentMethod] || payment.paymentMethod : "—"}
+                          </td>
+                          <td className="p-3">
+                            <Badge className={`${st.variant} text-white`}>
+                              {st.label}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </BpoLayout>
   );
